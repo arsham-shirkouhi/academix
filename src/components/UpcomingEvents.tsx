@@ -5,12 +5,12 @@ function UpcomingEvents() {
   const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchUpcomingEvents()
-      .then((data) => {
-        console.log("Canvas data:", data);
-        setEvents(data);
-      })
-      .catch((err) => console.error("Canvas API error:", err));
+    // fetchUpcomingEvents()
+    //   .then((data) => {
+    //     console.log("Canvas data:", data);
+    //     setEvents(data);
+    //   })
+    //   .catch((err) => console.error("Canvas API error:", err));
   }, []);
   
 
