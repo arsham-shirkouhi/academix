@@ -5,9 +5,9 @@ import { fetchUpcomingEvents } from "../utils/canvasApi";
 
 function Assignments() {
   const [events, setEvents] = useState<any[]>([]);
-  const [token, setToken] = useState(() => localStorage.getItem("canvasToken") || "");
-  const [domain, setDomain] = useState(() => localStorage.getItem("canvasDomain") || "https://sjsu.instructure.com");
-
+  const [token] = useState(() => localStorage.getItem("canvasToken") || "");
+  const [domain] = useState(() => localStorage.getItem("canvasDomain") || "https://sjsu.instructure.com");
+  
   useEffect(() => {
     const fetch = async () => {
       try {
