@@ -2,14 +2,13 @@ import { useEffect, useState } from "react";
 import { fetchUpcomingEvents } from "../utils/canvasApi";
 import UpcomingEvents from "../components/UpcomingEvents";
 
-const [token, setToken] = useState(() => localStorage.getItem("canvasToken") || "");
-const [domain, setDomain] = useState(() => localStorage.getItem("canvasDomain") || "https://sjsu.instructure.com");
-const [events, setEvents] = useState<any[]>([]);
+
 
 
 function Dashboard() {
-  const [token, setToken] = useState("");
-  const [domain, setDomain] = useState("https://sjsu.instructure.com");
+
+  const [token, setToken] = useState(() => localStorage.getItem("canvasToken") || "");
+  const [domain, setDomain] = useState(() => localStorage.getItem("canvasDomain") || "https://sjsu.instructure.com");
   const [events, setEvents] = useState<any[]>([]);
 
   const handleFetch = async () => {
@@ -31,7 +30,6 @@ function Dashboard() {
       handleFetch();
     }
   }, []);
-  
   
   
 
