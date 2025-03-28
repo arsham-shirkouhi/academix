@@ -25,11 +25,17 @@ function Assignments() {
   }, [token, domain]);
 
   const daysLeft = (dueDate: string) => {
+    if (!dueDate) return null; // Handle missing or invalid dates
+  
     const now = new Date();
     const due = new Date(dueDate);
+  
+    if (isNaN(due.getTime())) return null; // Handle invalid date formats
+  
     const diff = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     return diff;
   };
+  
 
   return (
     <div style={{ padding: "2rem" }}>
@@ -42,8 +48,13 @@ function Assignments() {
             <li key={event.id} style={{ marginBottom: "1.5rem" }}>
               <strong>{event.title}</strong>
               <div style={{ fontSize: "0.9rem", color: "#555" }}>
-                Due: {new Date(event.due_at).toLocaleString()} ({daysLeft(event.due_at)} day{daysLeft(event.due_at) !== 1 ? "s" : ""} left)
-              </div>
+  Due: {new Date(event.due_at).toLocaleString()} (
+  {daysLeft(event.due_at) !== null
+    ? `${daysLeft(event.due_at)} day${daysLeft(event.due_at) !== 1 ? "s" : ""} left`
+    : "no due date"}
+  )
+</div>
+
             </li>
           ))}
         </ul>
