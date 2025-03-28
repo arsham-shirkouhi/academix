@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchUpcomingEvents } from "../utils/canvasApi";
+import { fetchUpcomingEvents, fetchCalendarEvents } from "../utils/canvasApi";
 import UpcomingEvents from "../components/UpcomingEvents";
 
 
@@ -10,20 +10,24 @@ function Dashboard() {
   const [token, setToken] = useState(() => localStorage.getItem("canvasToken") || "");
   const [domain, setDomain] = useState(() => localStorage.getItem("canvasDomain") || "https://sjsu.instructure.com");
   const [events, setEvents] = useState<any[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
 
-  const handleFetch = async () => {
-    try {
-      // Save to localStorage
-      localStorage.setItem("canvasToken", token);
-      localStorage.setItem("canvasDomain", domain);
-  
-      const data = await fetchUpcomingEvents(token, domain);
-      setEvents(data);
-    } catch (error) {
-      console.error("Error fetching Canvas events:", error);
-    }
-    
-  };
+
+ const handleFetch = async () => {
+  try {
+    localStorage.setItem("canvasToken", token);
+    localStorage.setItem("canvasDomain", domain);
+
+    const data = await fetchUpcomingEvents(token, domain);
+    setEvents(data);
+
+    const calendar = await fetchCalendarEvents(token, domain);
+    setCalendarEvents(calendar);
+  } catch (error) {
+    console.error("Error fetching from Canvas:", error);
+  }
+};
+
 
   useEffect(() => {
     if (token && domain) {
