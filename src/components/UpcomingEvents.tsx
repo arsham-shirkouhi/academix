@@ -1,19 +1,8 @@
-import { useEffect, useState } from "react";
-import { fetchUpcomingEvents } from "../utils/canvasApi";
+type UpcomingEventsProps = {
+  events: any[];
+};
 
-function UpcomingEvents() {
-  const [events, setEvents] = useState<any[]>([]);
-
-  useEffect(() => {
-    // fetchUpcomingEvents()
-    //   .then((data) => {
-    //     console.log("Canvas data:", data);
-    //     setEvents(data);
-    //   })
-    //   .catch((err) => console.error("Canvas API error:", err));
-  }, []);
-  
-
+function UpcomingEvents({ events }: UpcomingEventsProps) {
   return (
     <div
       style={{
@@ -25,7 +14,7 @@ function UpcomingEvents() {
       }}
     >
       <h3 style={{ marginBottom: "1rem" }}>Upcoming</h3>
-  
+
       {events.length === 0 ? (
         <p>No events found.</p>
       ) : (
@@ -42,7 +31,6 @@ function UpcomingEvents() {
       )}
     </div>
   );
-  
 }
 
 export default UpcomingEvents;

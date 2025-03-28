@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { fetchUpcomingEvents } from "../utils/canvasApi";
+import UpcomingEvents from "../components/UpcomingEvents";
 
 function Dashboard() {
   const [token, setToken] = useState("");
@@ -37,21 +38,11 @@ function Dashboard() {
         />
         <button onClick={handleFetch}>Fetch Events</button>
       </div>
-
-      {/* Displaying Canvas Events */}
-      <div>
-        {events.length > 0 ? (
-          <ul>
-            {events.map((event) => (
-              <li key={event.id}>{event.title}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>No events yet.</p>
-        )}
-      </div>
+  
+      {/* Upcoming Events Component */}
+      <UpcomingEvents events={events} />
     </div>
   );
-}
+}  
 
 export default Dashboard;
