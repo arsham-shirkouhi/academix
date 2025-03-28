@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { fetchUpcomingEvents, fetchCalendarEvents } from "../utils/canvasApi";
 import UpcomingEvents from "../components/UpcomingEvents";
 import WeeklyCalendar from "../components/WeeklyCalender";
+import { loadSchedule } from "../utils/scheduleStorage";
+import { useNavigate } from "react-router-dom";
 
 
 
@@ -12,6 +14,13 @@ function Dashboard() {
   const [domain, setDomain] = useState(() => localStorage.getItem("canvasDomain") || "https://sjsu.instructure.com");
   const [events, setEvents] = useState<any[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const navigate = useNavigate();
+const [schedule, setSchedule] = useState<any[]>([]);
+
+useEffect(() => {
+  const saved = loadSchedule();
+  setSchedule(saved);
+}, []);
 
 
  const handleFetch = async () => {
@@ -81,7 +90,27 @@ function Dashboard() {
           <p>📋 Tasks Done: <strong>3/5</strong></p>
         </div>
   
-        <WeeklyCalendar events={calendarEvents} />
+        {schedule.length === 0 ? (
+  <div style={{ textAlign: "center", padding: "2rem" }}>
+    <button
+      style={{
+        padding: "1rem 2rem",
+        backgroundColor: "#2200ff",
+        color: "white",
+        fontSize: "1rem",
+        borderRadius: "10px",
+        border: "none",
+        cursor: "pointer",
+      }}
+      onClick={() => navigate("/planner")}
+    >
+      ➕ Add Weekly Schedule
+    </button>
+  </div>
+) : (
+  <WeeklyCalendar events={schedule} />
+)}
+
 
   
         {/* Upcoming Events (LIVE from Canvas) */}
