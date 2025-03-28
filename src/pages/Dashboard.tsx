@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchUpcomingEvents } from "../utils/canvasApi";
 import UpcomingEvents from "../components/UpcomingEvents";
+
+const [token, setToken] = useState(() => localStorage.getItem("canvasToken") || "");
+const [domain, setDomain] = useState(() => localStorage.getItem("canvasDomain") || "https://sjsu.instructure.com");
+const [events, setEvents] = useState<any[]>([]);
+
 
 function Dashboard() {
   const [token, setToken] = useState("");
@@ -9,13 +14,26 @@ function Dashboard() {
 
   const handleFetch = async () => {
     try {
+      // Save to localStorage
+      localStorage.setItem("canvasToken", token);
+      localStorage.setItem("canvasDomain", domain);
+  
       const data = await fetchUpcomingEvents(token, domain);
-      console.log("Canvas events:", data);
       setEvents(data);
     } catch (error) {
       console.error("Error fetching Canvas events:", error);
     }
+    
   };
+
+  useEffect(() => {
+    if (token && domain) {
+      handleFetch();
+    }
+  }, []);
+  
+  
+  
 
   return (
     <div style={{ padding: "2rem" }}>
