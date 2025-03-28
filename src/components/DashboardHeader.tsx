@@ -19,13 +19,15 @@ function DashboardHeader({ events, token, domain }: DashboardHeaderProps) {
   // 📌 Fetch user's name
   useEffect(() => {
     if (!token || !domain) return;
-
+  
     fetchUserProfile(token, domain)
       .then((data) => {
+        console.log("User Profile Response:", data); // 👈 ADD THIS
         if (data.name) setUserName(data.name);
       })
       .catch((err) => console.error("Failed to fetch user profile:", err));
   }, [token, domain]);
+  
 
   // 📌 Analyze upcoming events
   useEffect(() => {

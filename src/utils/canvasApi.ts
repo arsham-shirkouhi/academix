@@ -43,5 +43,5 @@ export const fetchUserProfile = async (token: string, domain: string) => {
 
   if (!res.ok) throw new Error("Failed to fetch profile");
 
-  return res.json();
+  return res.json(); // returns: { name, short_name, login_id, ... }
 };
