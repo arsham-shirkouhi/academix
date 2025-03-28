@@ -4,6 +4,7 @@ import UpcomingEvents from "../components/UpcomingEvents";
 import WeeklyCalendar from "../components/WeeklyCalender";
 import { loadSchedule } from "../utils/scheduleStorage";
 import { useNavigate } from "react-router-dom";
+import DashboardHeader from "../components/DashboardHeader";
 
 
 
@@ -52,7 +53,13 @@ useEffect(() => {
   
 
   return (
+
+
+    
     <div style={{ padding: "2rem" }}>
+
+<DashboardHeader events={events} />
+
       {/* Canvas API Token Input Form */}
       <div style={{ marginBottom: "2rem" }}>
         <h2>Connect to Canvas</h2>
