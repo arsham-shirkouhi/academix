@@ -10,27 +10,41 @@ export default async function handler(req: Request) {
         );
       }
   
-      const response = await fetch(`${domain}/api/v1/users/self/upcoming_events`, {
+      const url = `${domain}/api/v1/users/self/upcoming_events`;
+      console.log("📡 Fetching from:", url);
+  
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
   
+      const contentType = response.headers.get("content-type");
+      const responseText = await response.text();
+  
+      console.log("🔁 Response from Canvas:", responseText);
+  
       if (!response.ok) {
-        const text = await response.text();
-        console.error("Canvas API returned non-200:", text);
-        return new Response(JSON.stringify({ error: text }), {
+        return new Response(JSON.stringify({ error: responseText }), {
           status: response.status,
         });
       }
   
-      const data = await response.json();
+      if (!contentType?.includes("application/json")) {
+        console.error("❌ Canvas returned non-JSON response");
+        return new Response(
+          JSON.stringify({ error: "Non-JSON response from Canvas" }),
+          { status: 500 }
+        );
+      }
+  
+      const data = JSON.parse(responseText);
       return new Response(JSON.stringify(data), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     } catch (error: any) {
-      console.error("Server error:", error.message);
+      console.error("❌ Server error:", error.message);
       return new Response(
         JSON.stringify({ error: "Server error while contacting Canvas." }),
         { status: 500 }
