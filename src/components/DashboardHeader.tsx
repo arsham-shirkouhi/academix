@@ -22,12 +22,11 @@ function DashboardHeader({ events, token, domain }: DashboardHeaderProps) {
   
     fetchUserProfile(token, domain)
       .then((data) => {
-        console.log("Fetched user profile:", data);
+        console.log("Canvas profile data:", data); // 👀 check this
         if (data.name) setUserName(data.name);
       })
       .catch((err) => console.error("Failed to fetch user profile:", err));
   }, [token, domain]);
-  
   
 
   // 📌 Analyze upcoming events
