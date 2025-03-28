@@ -13,7 +13,7 @@ function Dashboard() {
   const [token, setToken] = useState(() => localStorage.getItem("canvasToken") || "");
   const [domain, setDomain] = useState(() => localStorage.getItem("canvasDomain") || "https://sjsu.instructure.com");
   const [events, setEvents] = useState<any[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [, setCalendarEvents] = useState<any[]>([]);
   const navigate = useNavigate();
 const [schedule, setSchedule] = useState<any[]>([]);
 
