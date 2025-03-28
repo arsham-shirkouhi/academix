@@ -7,12 +7,10 @@ type UpcomingEventsProps = {
 function UpcomingEvents({ events }: UpcomingEventsProps) {
   const navigate = useNavigate();
 
-  // Get proper event date
   const getEventDate = (event: any): string | null => {
     return event.due_at || event.start_at || null;
   };
 
-  // Calculate days left until due/start
   const daysLeft = (event: any): number | null => {
     const dateStr = getEventDate(event);
     if (!dateStr) return null;
@@ -24,33 +22,43 @@ function UpcomingEvents({ events }: UpcomingEventsProps) {
     return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  // Determine urgency color
   const getUrgencyColor = (daysLeft: number | null) => {
-    if (daysLeft === null) return "#999"; // gray for unknown
-    if (daysLeft <= 1) return "#E63946"; // red
-    if (daysLeft <= 2) return "#F4A261"; // orange
-    if (daysLeft <= 4) return "#E9C46A"; // yellow
-    return "#2A9D8F"; // green
+    if (daysLeft === null) return "#999";
+    if (daysLeft <= 1) return "#E63946";
+    if (daysLeft <= 2) return "#F4A261";
+    if (daysLeft <= 4) return "#E9C46A";
+    return "#2A9D8F";
   };
 
-  // Sort and slice events
-  const sorted = [...events].sort((a, b) => {
+  // Filter to only include events within 7 days
+  const upcomingThisWeek = events.filter((event) => {
+    const days = daysLeft(event);
+    return days !== null && days <= 7 && days >= 0;
+  });
+
+  const sorted = upcomingThisWeek.sort((a, b) => {
     const aDate = new Date(getEventDate(a) || "").getTime();
     const bDate = new Date(getEventDate(b) || "").getTime();
     return aDate - bDate;
   });
 
-  const topEvents = sorted.slice(0, 4);
-
   return (
-    <div style={{ backgroundColor: "#f0f0f0", padding: "1rem", borderRadius: "8px" }}>
+    <div
+      style={{
+        backgroundColor: "#f0f0f0",
+        padding: "1rem",
+        borderRadius: "8px",
+        maxHeight: "320px",
+        overflowY: "auto",
+      }}
+    >
       <h3 style={{ marginBottom: "1rem" }}>Upcoming</h3>
 
-      {topEvents.length === 0 ? (
-        <p>No upcoming events.</p>
+      {sorted.length === 0 ? (
+        <p>No upcoming events this week.</p>
       ) : (
         <ul style={{ listStyle: "none", padding: 0 }}>
-          {topEvents.map((event: any) => {
+          {sorted.map((event: any) => {
             const days = daysLeft(event);
             return (
               <li
