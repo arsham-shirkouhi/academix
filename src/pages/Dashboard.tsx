@@ -16,6 +16,8 @@ function Dashboard() {
 
  const handleFetch = async () => {
   try {
+
+    
     localStorage.setItem("canvasToken", token);
     localStorage.setItem("canvasDomain", domain);
 
@@ -23,7 +25,9 @@ function Dashboard() {
     setEvents(data);
 
     const calendar = await fetchCalendarEvents(token, domain);
+    console.log("📅 Calendar Events:", calendar);
     setCalendarEvents(calendar);
+    
   } catch (error) {
     console.error("Error fetching from Canvas:", error);
   }
