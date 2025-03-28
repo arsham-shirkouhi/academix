@@ -16,40 +16,35 @@ function DashboardHeader({ events, userName = "Arsham" }: DashboardHeaderProps) 
 
   useEffect(() => {
     const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-
+  
     let dueTomorrowCount = 0;
     let upcomingExamDays: number[] = [];
-
+  
     events.forEach((event) => {
       const rawDate = event.due_at || event.start_at;
       if (!rawDate) return;
-
+  
       const eventDate = new Date(rawDate);
-      const isSameDay =
-        eventDate.getDate() === tomorrow.getDate() &&
-        eventDate.getMonth() === tomorrow.getMonth() &&
-        eventDate.getFullYear() === tomorrow.getFullYear();
-
-      if (isSameDay) dueTomorrowCount++;
-
+      const diff = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
+      if (diff === 1) dueTomorrowCount++;
+  
       // Check for exams
       const title = event.title.toLowerCase();
       if (title.includes("exam") || title.includes("quiz") || title.includes("midterm") || title.includes("test")) {
-        const diff = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         if (diff >= 0) upcomingExamDays.push(diff);
       }
     });
-
+  
     setAssignmentsDueTomorrow(dueTomorrowCount);
     setNextExamInDays(upcomingExamDays.length > 0 ? Math.min(...upcomingExamDays) : null);
-
+  
     // Calculate week number
     const timeDiff = today.getTime() - semesterStart.getTime();
     const weekNumber = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * 7)) + 1;
     setCurrentWeek(weekNumber > 0 ? weekNumber : 0);
   }, [events]);
+  
 
   const formattedDate = new Date().toLocaleDateString();
 
