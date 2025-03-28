@@ -35,13 +35,21 @@ export async function fetchCalendarEvents(token: string, domain: string) {
 }
 
 export const fetchUserProfile = async (token: string, domain: string) => {
+  console.log("Fetching user profile from:", `${domain}/api/v1/users/self/profile`);
+  console.log("Using token:", token);
+
   const res = await fetch(`${domain}/api/v1/users/self/profile`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
 
+  console.log("Raw response:", res);
+
   if (!res.ok) throw new Error("Failed to fetch profile");
 
-  return res.json(); // returns: { name, short_name, login_id, ... }
+  const data = await res.json();
+  console.log("Canvas profile data:", data); // 👈 add this
+
+  return data;
 };

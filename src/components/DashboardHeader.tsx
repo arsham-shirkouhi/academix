@@ -22,11 +22,12 @@ function DashboardHeader({ events, token, domain }: DashboardHeaderProps) {
   
     fetchUserProfile(token, domain)
       .then((data) => {
-        console.log("User Profile Response:", data); // 👈 ADD THIS
+        console.log("Fetched user profile:", data);
         if (data.name) setUserName(data.name);
       })
       .catch((err) => console.error("Failed to fetch user profile:", err));
   }, [token, domain]);
+  
   
 
   // 📌 Analyze upcoming events
