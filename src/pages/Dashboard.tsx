@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchUpcomingEvents, fetchCalendarEvents } from "../utils/canvasApi";
 import UpcomingEvents from "../components/UpcomingEvents";
+import WeeklyCalendar from "../components/WeeklyCalender";
 
 
 
@@ -76,22 +77,8 @@ function Dashboard() {
           <p>📋 Tasks Done: <strong>3/5</strong></p>
         </div>
   
-        {/* Weekly Calendar */}
-        <div style={{ backgroundColor: "#f0f0f0", padding: "1rem", borderRadius: "8px" }}>
-          <h3>Weekly Calendar</h3>
-          <p><strong>Monday, March 18</strong></p>
-          <p>12:00PM - 12:50PM | ENGR10 – Morris Dalley</p>
-          <p>1:30PM - 2:45PM | CS46B – Comp Sci Building</p>
-          <hr />
-          <p><strong>Tuesday, March 19</strong></p>
-          <p>9:00AM - 11:45AM | ENGR10 – Engineering Building</p>
-          <p>12:00PM - 1:15PM | PHYS51 – Fuguhiro Yoshida</p>
-          <p>12:00PM - 1:15PM | AMS10 – AMS Building</p>
-          <hr />
-          <p><strong>Wednesday, March 20</strong></p>
-          <p>12:00PM - 12:50PM | ENGR10 – Engineering Building</p>
-          <p>1:30PM - 2:45PM | CS46B – Comp Sci Building</p>
-        </div>
+        <WeeklyCalendar events={calendarEvents} />
+
   
         {/* Upcoming Events (LIVE from Canvas) */}
         <UpcomingEvents events={events} />
