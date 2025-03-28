@@ -58,7 +58,7 @@ useEffect(() => {
     
     <div style={{ padding: "2rem" }}>
 
-<DashboardHeader events={events} />
+<DashboardHeader events={events} token={token} domain={domain} />
 
       {/* Canvas API Token Input Form */}
       <div style={{ marginBottom: "2rem" }}>

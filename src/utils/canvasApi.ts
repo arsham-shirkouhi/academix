@@ -33,3 +33,15 @@ export async function fetchCalendarEvents(token: string, domain: string) {
 
   return res.json();
 }
+
+export const fetchUserProfile = async (token: string, domain: string) => {
+  const res = await fetch(`${domain}/api/v1/users/self/profile`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch profile");
+
+  return res.json();
+};
