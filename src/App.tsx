@@ -4,6 +4,7 @@ import Assignments from './pages/Assignments';
 import Planner from './pages/Planner';
 import Todo from './pages/Todo';
 import Sidebar from './components/Sidebar';
+import Account from "./pages/Account";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/assignments" element={<Assignments />} />
           <Route path="/planner" element={<Planner />} />
           <Route path="/todo" element={<Todo />} />
+          <Route path="/account" element={<Account />} />
         </Routes>
       </div>
     </div>
