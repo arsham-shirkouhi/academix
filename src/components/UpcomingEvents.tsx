@@ -45,14 +45,10 @@ function UpcomingEvents({ events }: UpcomingEventsProps) {
   return (
     <div
       style={{
-        backgroundColor: "#f0f0f0",
-        padding: "1rem",
-        borderRadius: "8px",
         maxHeight: "320px",
         overflowY: "auto",
       }}
     >
-      <h3 style={{ marginBottom: "1rem" }}>Upcoming</h3>
 
       {sorted.length === 0 ? (
         <p>No upcoming events this week.</p>
