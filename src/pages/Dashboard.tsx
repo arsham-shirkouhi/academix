@@ -5,16 +5,54 @@ import { loadSchedule } from "../utils/scheduleStorage";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import DashboardHeader from "../components/DashboardHeader";
+
+import StartIcon from "../assets/images/icons/play.svg?react";
+import StopIcon from "../assets/images/icons/stop.svg?react";
+import FullScreenIcon from "../assets/images/icons/fullscreen.svg?react";
+import RestartIcon from "../assets/images/icons/restart.svg?react";
 
 function Dashboard() {
   const [events] = useState<any[]>([]);
   const [schedule, setSchedule] = useState<any[]>([]);
-  const [time, setTime] = useState(90 * 60); // 1h 30m default
+  const [time, setTime] = useState(1 * 60);
+  const [initialTime, setInitialTime] = useState(1 * 60);
+  const [rotateRestart, setRotateRestart] = useState(false);
+
+  const [hours, setHours] = useState("00");
+const [minutes, setMinutes] = useState("00");
+const [seconds, setSeconds] = useState("00");
+
+const progressWidth = initialTime > 0 ? (time / initialTime) * 100 : 0;
+
+
+
+const inputStyle = {
+  width: "30px",
+  textAlign: "center" as const,
+  fontWeight: "bold",
+  border: "none",
+  outline: "none",
+  background: "transparent",
+  color: "#1F0741", // purple color
+  fontSize: "inherit",
+};
+
+  
+  
   const [isRunning, setIsRunning] = useState(false);
   const [streak, setStreak] = useState(1);
   const navigate = useNavigate();
 
   const userId = "demoUser"; // Replace with actual logged-in user ID later
+
+  useEffect(() => {
+    if (rotateRestart) {
+      const timeout = setTimeout(() => setRotateRestart(false), 500); // reset after 0.5s
+      return () => clearTimeout(timeout);
+    }
+  }, [rotateRestart]);
+  
 
   useEffect(() => {
     const today = new Date().toDateString();
@@ -75,58 +113,8 @@ function Dashboard() {
   return (
     <div style={{ padding: "15px", fontSize: "16px", color: "#1F0741" }}>
       {/* Welcome Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-        <div>
-          <h1 style={{ fontSize: "42px", margin: 0 }}>Welcome back, Arsham!</h1>
-          <p style={{ fontSize: "24px", marginTop: "0.25rem" }}>
-            {(() => {
-              const today = new Date();
-              let dueTomorrowCount = 0;
-              let nextExamInDays: number | null = null;
-              const examDays: number[] = [];
+      <DashboardHeader />
 
-              events.forEach((event) => {
-                const rawDate = event.due_at || event.start_at;
-                if (!rawDate) return;
-                const eventDate = new Date(rawDate);
-                const diff = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                if (diff === 1) dueTomorrowCount++;
-                const title = event.title.toLowerCase();
-                if (["exam", "quiz", "midterm", "test"].some((word) => title.includes(word))) {
-                  if (diff >= 0) examDays.push(diff);
-                }
-              });
-
-              nextExamInDays = examDays.length > 0 ? Math.min(...examDays) : null;
-              return (
-                <>
-                  You have <strong>{dueTomorrowCount}</strong> assignment{dueTomorrowCount !== 1 && "s"} due tomorrow
-                  {nextExamInDays !== null && (
-                    <> and an <strong>exam</strong> in {nextExamInDays} day{nextExamInDays !== 1 && "s"}</>
-                  )}
-                  <span style={{ color: "#1F0741", fontWeight: 600, cursor: "pointer" }}> view ➜</span>
-                </>
-              );
-            })()}
-          </p>
-        </div>
-
-        <div style={{ textAlign: "right" }}>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginBottom: "0.3rem" }}>
-            <button style={{
-              background: "transparent", border: "2px solid #1F0741", borderRadius: "8px",
-              width: "36px", height: "36px", display: "flex", justifyContent: "center",
-              alignItems: "center", fontSize: "18px", color: "#1F0741", cursor: "pointer",
-            }} title="Settings">
-              <img src="/icons/bell.svg" alt="bell" style={{ width: "20px" }} />
-            </button>
-          </div>
-          <div style={{ fontSize: "0.95rem" }}>
-            3/15/2025 <br />
-            <span style={{ fontWeight: "bold" }}>week 7/15</span>
-          </div>
-        </div>
-      </div>
 
       {/* Study Streak + Timer Bar */}
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "2rem" }}>
@@ -145,49 +133,161 @@ function Dashboard() {
         </div>
 
         <div style={{
-          flexGrow: 1,
-          display: "flex",
-          alignItems: "center",
-          border: "2px solid #1F0741",
-          borderRadius: "12px",
-          overflow: "hidden",
-          height: "40px",
-          position: "relative",
-          backgroundColor: "#FFFBF1",
-        }}>
-          <div style={{
-            backgroundColor: "orange",
-            width: `${(time / (90 * 60)) * 100}%`,
-            height: "100%",
-            position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: 0,
-          }}></div>
+  display: "flex",
+  alignItems: "center",
+  border: "3px solid #1F0741",
+  borderRadius: "12px",
+  overflow: "hidden",
+  height: "45px",
+  width: "100%",
+  backgroundColor: "#FFFBF1",
+}}>
+  {/* Timer and progress area */}
+  <div style={{
+    position: "relative",
+    flexGrow: 1,
+    height: "100%",
+    backgroundColor: "#FFFBF1",
+  }}>
+{/* Progress Bar */}
+<div style={{
+  backgroundColor: "#FFB800",
+  width: `${progressWidth}%`,
+  transition: "width 1s linear",
+  height: "100%",
+  position: "absolute",
+  top: 0,
+  left: 0,
+  zIndex: 0,
+}} />
 
-          <div style={{
-            position: "absolute",
-            left: "16px",
-            fontWeight: "bold",
-            color: "#1F0741",
-            zIndex: 1,
-          }}>{formatTime(time)}</div>
 
-          <div style={{
-            marginLeft: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "0 10px",
-            backgroundColor: "#FFFBF1",
-            zIndex: 2,
-          }}>
-            <img src="./images/icons/play.svg" alt="start" style={{ width: "20px", cursor: "pointer" }} onClick={() => setIsRunning(true)} />
-            <img src="./images/icons/stop.svg" alt="stop" style={{ width: "20px", cursor: "pointer" }} onClick={() => setIsRunning(false)} />
-            <img src="./images/icons/restart.svg" alt="reset" style={{ width: "20px", cursor: "pointer" }} onClick={() => setTime(90 * 60)} />
-            <img src="./images/icons/fullscreen.svg" alt="fullscreen" style={{ width: "20px", cursor: "pointer" }} onClick={() => document.documentElement.requestFullscreen()} />
-          </div>
-        </div>
+    {/* Timer Text */}
+   {/* Timer Text or Input */}
+   <div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    paddingLeft: "16px",
+    fontWeight: "bold",
+    color: "#1F0741",
+    lineHeight: "40px",
+    fontSize: "inherit",
+    position: "relative",
+    zIndex: 1,
+    gap: "5px",
+  }}
+>
+{!isRunning ? (
+  <>
+    <input
+      type="number"
+      min="0"
+      max="99"
+      value={hours}
+      onChange={(e) => {
+        const val = e.target.value.padStart(2, "0").slice(-2);
+        setHours(val);
+      }}
+      style={inputStyle}
+    />
+    <span>h</span>
+    <input
+      type="number"
+      min="0"
+      max="59"
+      value={minutes}
+      onChange={(e) => {
+        const val = e.target.value.padStart(2, "0").slice(-2);
+        setMinutes(val);
+      }}
+      style={inputStyle}
+    />
+    <span>m</span>
+    <input
+      type="number"
+      min="0"
+      max="59"
+      value={seconds}
+      onChange={(e) => {
+        const val = e.target.value.padStart(2, "0").slice(-2);
+        setSeconds(val);
+      }}
+      style={inputStyle}
+    />
+    <span>s left</span>
+  </>
+) : (
+  <span>{formatTime(time)}</span>
+)}
+
+</div>
+
+
+
+  </div>
+
+  {/* Divider */}
+  <div style={{
+    height: "100%",
+    width: "2px",
+    backgroundColor: "#1F0741",
+  }} />
+
+  {/* Buttons */}
+  <div style={{
+    display: "flex",
+    alignItems: "center",
+    padding: "0 12px",
+    gap: "10px",
+    backgroundColor: "#FFFBF1",
+  }}>
+{isRunning ? (
+  <StopIcon
+    style={{ width: "25px", height: "25px", cursor: "pointer" }}
+    onClick={() => setIsRunning(false)}
+  />
+) : (
+<StartIcon
+  style={{ width: "25px", height: "25px", cursor: "pointer" }}
+  onClick={() => {
+    const h = parseInt(hours) || 0;
+    const m = parseInt(minutes) || 0;
+    const s = parseInt(seconds) || 0;
+    const total = h * 3600 + m * 60 + s;
+
+    if (total > 0) {
+      setTime(total);
+      setInitialTime(total);
+      setIsRunning(true);
+    }
+  }}
+/>
+
+)}
+
+
+<RestartIcon
+  style={{
+    width: "25px",
+    height: "25px",
+    cursor: "pointer",
+    transition: "transform 0.5s ease",
+    transform: rotateRestart ? "rotate(360deg)" : "none",
+  }}
+  onClick={() => {
+    const newTime = 60; // or use your logic
+    setTime(newTime);
+    setInitialTime(newTime);
+    setRotateRestart(true); // 🔁 trigger animation
+  }}
+/>
+
+    <FullScreenIcon style={{ width: "25px", height: "25px", cursor: "pointer" }} onClick={() => document.documentElement.requestFullscreen()} />
+  </div>
+</div>
+
+
       </div>
 
       {/* Main Grid */}

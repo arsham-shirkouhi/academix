@@ -43,3 +43,4 @@ export const fetchUserProfile = async (token: string, domain: string) => {
 
   return res.json();
 };
+

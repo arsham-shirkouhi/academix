@@ -1,82 +1,87 @@
 import { useEffect, useState } from "react";
-import { fetchUserProfile } from "../utils/canvasApi";
+import { auth, db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { fetchUserProfile, fetchUpcomingEvents } from "../utils/canvasApi";
 
-type DashboardHeaderProps = {
-  events: any[];
-  token: string;
-  domain: string;
-};
-
-function DashboardHeader({ events, token, domain }: DashboardHeaderProps) {
+function DashboardHeader() {
   const [userName, setUserName] = useState("Student");
   const [assignmentsDueTomorrow, setAssignmentsDueTomorrow] = useState(0);
-  const [nextExamInDays, setNextExamInDays] = useState<number | null>(null);
   const [currentWeek, setCurrentWeek] = useState(0);
 
-  const semesterStart = new Date("2025-01-22");
   const totalWeeks = 15;
 
-  // 📌 Fetch user's name
   useEffect(() => {
-    if (!token || !domain) return;
-  
-    fetchUserProfile(token, domain)
-      .then((data) => {
-        console.log("Canvas profile data:", data); // 👀 check this
-        if (data.name) setUserName(data.name);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch user profile:", err);
-      });
-        }, [token, domain]);
-  
+    const fetchData = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
 
-  // 📌 Analyze upcoming events
-  useEffect(() => {
-    const today = new Date();
-    let dueTomorrowCount = 0;
-    let upcomingExamDays: number[] = [];
+      const docRef = doc(db, "users", user.uid);
+      const snap = await getDoc(docRef);
 
-    events.forEach((event) => {
-      const rawDate = event.due_at || event.start_at;
-      if (!rawDate) return;
+      if (!snap.exists()) return console.warn("⚠️ No user data found.");
+      const { token, domain, semesterStart: semesterStartStr } = snap.data();
 
-      const eventDate = new Date(rawDate);
-      const diff = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (!token || !domain) return console.warn("⚠️ Missing token or domain.");
 
-      if (diff === 1) dueTomorrowCount++;
-
-      const title = event.title.toLowerCase();
-      if (title.includes("exam") || title.includes("quiz") || title.includes("midterm") || title.includes("test")) {
-        if (diff >= 0) upcomingExamDays.push(diff);
+      try {
+        const profile = await fetchUserProfile(token, domain);
+        if (profile?.name) setUserName(profile.name);
+      } catch (err) {
+        console.error("❌ Failed to fetch Canvas profile:", err);
       }
-    });
 
-    setAssignmentsDueTomorrow(dueTomorrowCount);
-    setNextExamInDays(upcomingExamDays.length > 0 ? Math.min(...upcomingExamDays) : null);
+      try {
+        const events = await fetchUpcomingEvents(token, domain);
+        const today = new Date();
+        let dueTomorrow = 0;
+        const dueTomorrowTitles: string[] = [];
 
-    const timeDiff = today.getTime() - semesterStart.getTime();
-    const weekNumber = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * 7)) + 1;
-    setCurrentWeek(weekNumber > 0 ? weekNumber : 0);
-  }, [events]);
+        events.forEach((event: any) => {
+          const dateStr = event.due_at || event.start_at;
+          if (!dateStr) return;
+
+          const eventDate = new Date(dateStr);
+          const diff = Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+          if (diff === 1) {
+            dueTomorrow++;
+            dueTomorrowTitles.push(event.title);
+          }
+        });
+
+        console.log("📋 Assignments due tomorrow:", dueTomorrowTitles);
+        setAssignmentsDueTomorrow(dueTomorrow);
+      } catch (err) {
+        console.error("❌ Failed to fetch Canvas assignments:", err);
+      }
+
+      // 📌 Calculate current week (no need to save semesterStart in state)
+      if (semesterStartStr) {
+        const parsedStart = new Date(semesterStartStr);
+        if (!isNaN(parsedStart.getTime())) {
+          const now = new Date();
+          const week = Math.floor((now.getTime() - parsedStart.getTime()) / (1000 * 60 * 60 * 24 * 7)) + 1;
+          setCurrentWeek(week > 0 ? week : 0);
+        }
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const formattedDate = new Date().toLocaleDateString();
 
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", paddingBottom: "1.5rem" }}>
       <div>
-        <h2 style={{ marginBottom: "0.5rem", color: "#21003b" }}>
+        <h2 style={{ fontSize: "42px", marginBottom: "0.5rem", color: "#21003b" }}>
           Welcome back, {userName}!
         </h2>
-        <p style={{ margin: 0, fontSize: "1rem", color: "#21003b" }}>
+        <p style={{ margin: 0, fontSize: "24px", color: "#21003b" }}>
           You have <strong>{assignmentsDueTomorrow}</strong> assignment{assignmentsDueTomorrow !== 1 && "s"} due tomorrow
-          {nextExamInDays !== null && (
-            <> and an <strong>exam</strong> in {nextExamInDays} day{nextExamInDays !== 1 && "s"}</>
-          )}.
-          <span style={{ marginLeft: "0.25rem", fontWeight: "bold", cursor: "pointer" }}>view ➜</span>
+          <span style={{ marginLeft: "0.25rem", fontWeight: "bold", cursor: "pointer" }}> view ➜</span>
         </p>
       </div>
-
       <div style={{ textAlign: "right", color: "#21003b" }}>
         <p style={{ margin: 0 }}>{formattedDate}</p>
         <p style={{ margin: 0 }}>
