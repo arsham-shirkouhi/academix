@@ -72,9 +72,9 @@ function DashboardHeader() {
   const formattedDate = new Date().toLocaleDateString();
 
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", paddingBottom: "1.5rem" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", paddingBottom: "0.5rem" }}>
       <div>
-        <h2 style={{ fontSize: "42px", marginBottom: "0.5rem", color: "#21003b" }}>
+        <h2 style={{ fontSize: "42px", marginBottom: "0.25rem", color: "#21003b" }}>
           Welcome back, {userName}!
         </h2>
         <p style={{ margin: 0, fontSize: "24px", color: "#21003b" }}>

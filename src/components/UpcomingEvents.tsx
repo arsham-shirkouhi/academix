@@ -1,64 +1,99 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { fetchUpcomingEvents } from "../utils/canvasApi";
+import { getUserSettings } from "../utils/firestoreUser";
+import { auth } from "../firebase";
 
-type UpcomingEventsProps = {
-  events: any[];
+type Assignment = {
+  id: string | number;
+  title?: string;
+  end_at?: string;
+  daysLeft?: number;
 };
 
-function UpcomingEvents({ events }: UpcomingEventsProps) {
+function UpcomingEvents() {
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const navigate = useNavigate();
 
-  const getEventDate = (event: any): string | null => {
-    return event.due_at || event.start_at || null;
-  };
+  useEffect(() => {
+    const loadEvents = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
 
-  const daysLeft = (event: any): number | null => {
-    const dateStr = getEventDate(event);
-    if (!dateStr) return null;
+      try {
+        const settings = await getUserSettings(user.uid);
+        if (!settings?.token || !settings?.domain) return;
 
+        const data = await fetchUpcomingEvents(settings.token, settings.domain);
+        console.log("✅ Raw data from Canvas:", data);
+
+        const processed = (data as any[])
+          .filter((a) => a.end_at)
+          .map((a) => {
+            const days = getDaysLeft(a.end_at);
+            return {
+              id: a.id,
+              title: a.title || a.assignment?.name || "Untitled",
+              end_at: a.end_at,
+              daysLeft: days,
+            };
+          })
+          .filter((a) => a.daysLeft !== undefined && a.daysLeft >= 0)
+          .sort((a, b) => new Date(a.end_at!).getTime() - new Date(b.end_at!).getTime());
+
+        setAssignments(processed);
+      } catch (error) {
+        console.error("❌ Failed to fetch upcoming assignments:", error);
+      }
+    };
+
+    loadEvents();
+  }, []);
+
+  const getDaysLeft = (dueDate: string): number | undefined => {
     const now = new Date();
-    const target = new Date(dateStr);
-    if (isNaN(target.getTime())) return null;
-
-    return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const due = new Date(dueDate);
+    if (isNaN(due.getTime())) return undefined;
+    return Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  const getUrgencyColor = (daysLeft: number | null) => {
-    if (daysLeft === null) return "#999";
-    if (daysLeft <= 1) return "#E63946";
-    if (daysLeft <= 2) return "#F4A261";
-    if (daysLeft <= 4) return "#E9C46A";
-    return "#2A9D8F";
+  const getUrgencyColor = (daysLeft: number | undefined) => {
+    if (daysLeft === undefined) return "#999";
+    if (daysLeft <= 2) return "#E63946"; // red
+    if (daysLeft <= 5) return "#E9C46A"; // orange
+    return "#2A9D8F"; // green
   };
-
-  // Filter to only include events within 7 days
-  const upcomingThisWeek = events.filter((event) => {
-    const days = daysLeft(event);
-    return days !== null && days <= 7 && days >= 0;
-  });
-
-  const sorted = upcomingThisWeek.sort((a, b) => {
-    const aDate = new Date(getEventDate(a) || "").getTime();
-    const bDate = new Date(getEventDate(b) || "").getTime();
-    return aDate - bDate;
-  });
 
   return (
-    <div
-      style={{
-        maxHeight: "320px",
-        overflowY: "auto",
-      }}
-    >
+    <>
+      {/* Hidden Scrollbar Styles for WebKit */}
+      <style>
+        {`
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+        `}
+      </style>
 
-      {sorted.length === 0 ? (
-        <p>No upcoming events this week.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {sorted.map((event: any) => {
-            const days = daysLeft(event);
-            return (
+      <div
+        className="no-scrollbar"
+        style={{
+          maxHeight: "320px",
+          overflowY: "auto",
+          scrollbarWidth: "none", // Firefox
+          msOverflowStyle: "none", // IE 10+
+          padding: "16px 16px", // ← added even left/right padding
+        }}
+      >
+        {assignments.length === 0 ? (
+          <p style={{ color: "#666", marginBottom: "1rem" }}>
+            No upcoming assignments this week.
+          </p>
+        ) : (
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {assignments.map((assignment) => (
               <li
-                key={event.id}
+                key={assignment.id}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -66,44 +101,65 @@ function UpcomingEvents({ events }: UpcomingEventsProps) {
                   marginBottom: "0.75rem",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", flex: 1 }}>
                   <span
                     style={{
+                      width: "17.5px",
+                      height: "17.5px",
+                      minWidth: "17.5px",
+                      minHeight: "17.5px",
                       display: "inline-block",
-                      width: "12px",
-                      height: "12px",
-                      borderRadius: "50%",
-                      backgroundColor: getUrgencyColor(days),
-                      marginRight: "0.5rem",
+                      boxSizing: "border-box",
+                      borderRadius: "5px",
+                      backgroundColor: getUrgencyColor(assignment.daysLeft),
+                      marginRight: "0.6rem",
+                      border: "2px solid #000",
+                      flexShrink: 0,
                     }}
                   />
-                  <span>{event.title}</span>
+                  <span
+                    style={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: "200px",
+                    }}
+                  >
+                    {assignment.title}
+                  </span>
                 </div>
-                <span style={{ fontSize: "0.85rem", color: "#555" }}>
-                  {days !== null ? `in ${days} day${days !== 1 ? "s" : ""}` : "no date"}
+                <span
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#1F0741",
+                  }}
+                >
+                  in {assignment.daysLeft} day
+                  {assignment.daysLeft !== 1 ? "s" : ""}
                 </span>
               </li>
-            );
-          })}
-        </ul>
-      )}
+            ))}
+          </ul>
+        )}
+          <button
+          onClick={() => navigate("/assignments")}
+          style={{
+            width: "100%",
+            height: "45px",
+            backgroundColor: "#ffb703",
+            border: "3px solid #000",
+            borderRadius: "6px",
+            fontWeight: "bold",
+            fontSize: "18px",
+            cursor: "pointer",
+          }}
+        >
+          View Assignments
+        </button>
 
-      <button
-        onClick={() => navigate("/assignments")}
-        style={{
-          marginTop: "1rem",
-          width: "100%",
-          padding: "0.5rem 1rem",
-          backgroundColor: "#ffb703",
-          border: "2px solid #000",
-          borderRadius: "6px",
-          fontWeight: "bold",
-          cursor: "pointer",
-        }}
-      >
-        View Assignments
-      </button>
-    </div>
+      </div>
+    </>
   );
 }
 

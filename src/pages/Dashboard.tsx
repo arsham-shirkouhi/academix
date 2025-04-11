@@ -11,9 +11,10 @@ import StartIcon from "../assets/images/icons/play.svg?react";
 import StopIcon from "../assets/images/icons/stop.svg?react";
 import FullScreenIcon from "../assets/images/icons/fullscreen.svg?react";
 import RestartIcon from "../assets/images/icons/restart.svg?react";
+import StreakIcon from "../assets/images/icons/streak.svg?react";
+
 
 function Dashboard() {
-  const [events] = useState<any[]>([]);
   const [schedule, setSchedule] = useState<any[]>([]);
   const [time, setTime] = useState(1 * 60);
   const [initialTime, setInitialTime] = useState(1 * 60);
@@ -27,22 +28,32 @@ const progressWidth = initialTime > 0 ? (time / initialTime) * 100 : 0;
 
 
 
-const inputStyle = {
-  width: "30px",
-  textAlign: "center" as const,
+const inputStyle: React.CSSProperties = {
+  width: "2ch",
+  textAlign: "right",
   fontWeight: "bold",
   border: "none",
   outline: "none",
   background: "transparent",
-  color: "#1F0741", // purple color
+  color: "#1F0741",
   fontSize: "inherit",
+  appearance: "none",
+  MozAppearance: "textfield",
+  WebkitAppearance: "none",
+  padding: 0,
+  margin: 0,
 };
+
+
+
 
   
   
   const [isRunning, setIsRunning] = useState(false);
   const [streak, setStreak] = useState(1);
   const navigate = useNavigate();
+  const [showFullscreenTimer, setShowFullscreenTimer] = useState(false);
+
 
   const userId = "demoUser"; // Replace with actual logged-in user ID later
 
@@ -114,22 +125,31 @@ const inputStyle = {
     <div style={{ padding: "15px", fontSize: "16px", color: "#1F0741" }}>
       {/* Welcome Header */}
       <DashboardHeader />
-
+      <div
+  style={{
+    borderTop: "3px dashed #1F0741",
+    width: "100%",
+    margin: "1rem 0",
+  }}
+/>
 
       {/* Study Streak + Timer Bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "2rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1rem" }}>
         <div style={{
-          border: "2px solid #1F0741",
+          border: "3px solid #1F0741",
           borderRadius: "12px",
-          padding: "10px 16px",
+          padding: "10px 10px",
           backgroundColor: "#FFFBF1",
           fontWeight: "bold",
           display: "flex",
           alignItems: "center",
           gap: "8px",
+          width:"260px",
+          height: "45px"
         }}>
-          <img src="/icons/fire.svg" alt="streak" style={{ width: "20px" }} />
-          <span>Study Streak: <span style={{ color: "orange" }}>{streak} Days</span></span>
+  <StreakIcon
+    style={{ width: "30px", height: "30px", cursor: "pointer" }}
+  />          <span>Study Streak: <span style={{ color: "orange" }}>{streak} days</span></span>
         </div>
 
         <div style={{
@@ -150,16 +170,20 @@ const inputStyle = {
     backgroundColor: "#FFFBF1",
   }}>
 {/* Progress Bar */}
-<div style={{
-  backgroundColor: "#FFB800",
-  width: `${progressWidth}%`,
-  transition: "width 1s linear",
-  height: "100%",
-  position: "absolute",
-  top: 0,
-  left: 0,
-  zIndex: 0,
-}} />
+{!showFullscreenTimer && (
+  <div style={{
+    backgroundColor: "#FFB800",
+    width: `${progressWidth}%`,
+    transition: "width 1s linear",
+    height: "100%",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    zIndex: 0,
+  }} />
+)}
+
+
 
 
     {/* Timer Text */}
@@ -175,53 +199,55 @@ const inputStyle = {
     fontSize: "inherit",
     position: "relative",
     zIndex: 1,
-    gap: "5px",
+    gap: "0.25ch", // tight spacing
   }}
 >
-{!isRunning ? (
-  <>
-    <input
-      type="number"
-      min="0"
-      max="99"
-      value={hours}
-      onChange={(e) => {
-        const val = e.target.value.padStart(2, "0").slice(-2);
-        setHours(val);
-      }}
-      style={inputStyle}
-    />
-    <span>h</span>
-    <input
-      type="number"
-      min="0"
-      max="59"
-      value={minutes}
-      onChange={(e) => {
-        const val = e.target.value.padStart(2, "0").slice(-2);
-        setMinutes(val);
-      }}
-      style={inputStyle}
-    />
-    <span>m</span>
-    <input
-      type="number"
-      min="0"
-      max="59"
-      value={seconds}
-      onChange={(e) => {
-        const val = e.target.value.padStart(2, "0").slice(-2);
-        setSeconds(val);
-      }}
-      style={inputStyle}
-    />
-    <span>s left</span>
-  </>
-) : (
-  <span>{formatTime(time)}</span>
-)}
-
+  {!isRunning ? (
+    <>
+      <input
+        type="text"
+        value={hours}
+        inputMode="numeric"
+        onChange={(e) => {
+          const raw = e.target.value.replace(/\D/g, "");
+          setHours(raw.padStart(2, "0").slice(-2));
+        }}
+        style={inputStyle}
+      />
+      <span>h</span>
+      <input
+        type="text"
+        value={minutes}
+        inputMode="numeric"
+        onChange={(e) => {
+          const raw = e.target.value.replace(/\D/g, "");
+          setMinutes(raw.padStart(2, "0").slice(-2));
+        }}
+        style={inputStyle}
+      />
+      <span>m</span>
+      <input
+        type="text"
+        value={seconds}
+        inputMode="numeric"
+        onChange={(e) => {
+          const raw = e.target.value.replace(/\D/g, "");
+          setSeconds(raw.padStart(2, "0").slice(-2));
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        style={inputStyle}
+      />
+      <span>s left</span>
+    </>
+  ) : (
+    <span>{formatTime(time)}</span>
+  )}
 </div>
+
 
 
 
@@ -283,7 +309,10 @@ const inputStyle = {
   }}
 />
 
-    <FullScreenIcon style={{ width: "25px", height: "25px", cursor: "pointer" }} onClick={() => document.documentElement.requestFullscreen()} />
+<FullScreenIcon
+  style={{ width: "25px", height: "25px", cursor: "pointer" }}
+  onClick={() => setShowFullscreenTimer(true)}
+/>
   </div>
 </div>
 
@@ -351,9 +380,10 @@ const inputStyle = {
           <div style={{ backgroundColor: "#1F0741", color: "#FFFBF1", padding: "0.75rem 1rem", fontSize: "24px", fontWeight: "bold" }}>
             Upcoming
           </div>
-          <div style={{ backgroundColor: "#FFFBF1", padding: "1rem" }}>
-            <UpcomingEvents events={events} />
+          <div style={{ backgroundColor: "#FFFBF1"}}>
+          <UpcomingEvents />
           </div>
+
         </div>
 
         {/* To-Do */}
@@ -387,8 +417,38 @@ const inputStyle = {
         {/* You can plug it back here when you resume GPA work */}
 
       </div>
+      {showFullscreenTimer && (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        backgroundColor: "#FFFBF1",
+        color: "#1F0741",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 9999,
+        flexDirection: "column",
+      }}
+      onClick={() => setShowFullscreenTimer(false)} // click to exit fullscreen
+    >
+      <span style={{ fontSize: "6rem", fontWeight: "bold" }}>
+        {formatTime(time).replace(" left", "")}
+      </span>
+      <p style={{ marginTop: "1rem", fontSize: "1.5rem" }}>Click anywhere to exit</p>
     </div>
+  )}
+  
+    </div>
+
+
+
   );
+
+
 }
 
 export default Dashboard;
