@@ -74,55 +74,45 @@ function Assignments() {
 
   return (
     <div style={{ padding: "15px", height: "100vh", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
-     <style>
-  {`
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
+      <style>
+        {`
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .no-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+          }
+          .bounce-loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+          }
+          .bounce-loader div {
+            width: 12px;
+            height: 12px;
+            background-color: #1f0741;
+            border-radius: 50%;
+            animation: bounce 1.2s infinite ease-in-out;
+          }
+          .bounce-loader div:nth-child(2) { animation-delay: -0.2s; }
+          .bounce-loader div:nth-child(3) { animation-delay: -0.4s; }
 
-    @keyframes fadeInUp {
-      0% { opacity: 0; transform: translateY(10px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
 
-    @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0); }
-      40% { transform: scale(1); }
-    }
 
-    .bounce-loader {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 0.5rem;
-    }
+        `}
 
-    .bounce-loader div {
-      width: 12px;
-      height: 12px;
-      background-color: #1f0741;
-      border-radius: 50%;
-      animation: bounce 1.2s infinite ease-in-out;
-    }
-
-    .bounce-loader div:nth-child(2) { animation-delay: -0.2s; }
-    .bounce-loader div:nth-child(3) { animation-delay: -0.4s; }
-
-    .assignment-card {
-      transition: transform 0.25s ease;
-      animation: fadeInUp 0.5s ease forwards;
-    }
-
-    .assignment-card:hover {
-      transform: scale(1.02);
-    }
-  `}
-</style>
-
+        
+      </style>
 
       {/* Modal for color customization */}
       {showModal && (
@@ -138,7 +128,7 @@ function Assignments() {
           zIndex: 999
         }}>
           <div style={{
-            background: "#fff",
+            background: "#FFFBF1",
             padding: "20px",
             borderRadius: "10px",
             width: "90%",
@@ -241,18 +231,17 @@ function Assignments() {
     border: `3px solid #1f0741`,
     borderRadius: "10px",
     padding: "15px 15px 15px 30px",
-    background: "#fff",
+    background: "#FFFBF1",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     position: "relative",
+    animation: "fadeInUp 0.5s ease forwards",
     animationDelay: `${index * 0.05}s`,
     opacity: 0,
-    marginBottom: index === events.length - 1 ? "15px" : "0px",
+    marginBottom: index === events.length - 1 ? "15px" : "0px"
   }}
 >
-
-
 
                   <div style={{
                     position: "absolute",
@@ -290,7 +279,7 @@ function Assignments() {
                         padding: "4px 10px",
                         backgroundColor: urgencyColor,
                         borderRadius: "6px",
-                        color: "#fff",
+                        color: "#FFFBF1",
                         fontWeight: "bold",
                         fontSize: "0.85rem",
                         border: "3px solid #1F0741",
