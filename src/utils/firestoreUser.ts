@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 // Save token and domain
@@ -12,3 +12,10 @@ export const getUserSettings = async (uid: string) => {
   const docSnap = await getDoc(docRef);
   return docSnap.exists() ? docSnap.data() : null;
 };
+
+export async function updateColorPreferences(uid: string, preferences: Record<string, string>) {
+  const ref = doc(db, "users", uid);
+  await updateDoc(ref, {
+    colorPreferences: preferences,
+  });
+}

@@ -13,9 +13,12 @@ type Assignment = {
 
 function UpcomingEvents() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
     const loadEvents = async () => {
       const user = auth.currentUser;
       if (!user) return;
@@ -39,15 +42,27 @@ function UpcomingEvents() {
             };
           })
           .filter((a) => a.daysLeft !== undefined && a.daysLeft >= 0)
-          .sort((a, b) => new Date(a.end_at!).getTime() - new Date(b.end_at!).getTime());
+          .sort(
+            (a, b) =>
+              new Date(a.end_at!).getTime() - new Date(b.end_at!).getTime()
+          );
 
         setAssignments(processed);
       } catch (error) {
         console.error("❌ Failed to fetch upcoming assignments:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadEvents();
+
+    intervalId = setInterval(() => {
+      console.log("🔁 Refreshing assignment list...");
+      loadEvents();
+    }, 15 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const getDaysLeft = (dueDate: string): number | undefined => {
@@ -58,19 +73,53 @@ function UpcomingEvents() {
   };
 
   const getUrgencyColor = (daysLeft: number | undefined) => {
-    if (daysLeft === undefined) return "#999";
-    if (daysLeft <= 2) return "#E63946"; // red
-    if (daysLeft <= 5) return "#E9C46A"; // orange
-    return "#2A9D8F"; // green
+    if (daysLeft === undefined) return "#1F0741";
+    if(daysLeft <= 1) return "#DF1b1b"
+    if (daysLeft <= 3) return "#FF6A00";
+    if (daysLeft <= 5) return "#FFB200";
+    return "#1DB815";
   };
+
 
   return (
     <>
-      {/* Hidden Scrollbar Styles for WebKit */}
       <style>
         {`
           .no-scrollbar::-webkit-scrollbar {
             display: none;
+          }
+
+          @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+
+          @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+          }
+
+          .bounce-loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+          }
+
+          .bounce-loader div {
+            width: 12px;
+            height: 12px;
+            background-color: #1f0741;
+            border-radius: 50%;
+            animation: bounce 1.2s infinite ease-in-out;
+          }
+
+          .bounce-loader div:nth-child(2) {
+            animation-delay: -0.2s;
+          }
+
+          .bounce-loader div:nth-child(3) {
+            animation-delay: -0.4s;
           }
         `}
       </style>
@@ -79,19 +128,44 @@ function UpcomingEvents() {
         className="no-scrollbar"
         style={{
           maxHeight: "320px",
+          minHeight: "320px",
           overflowY: "auto",
-          scrollbarWidth: "none", // Firefox
-          msOverflowStyle: "none", // IE 10+
-          padding: "16px 16px", // ← added even left/right padding
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          padding: "16px",
+          position: "relative",
         }}
       >
-        {assignments.length === 0 ? (
-          <p style={{ color: "#666", marginBottom: "1rem" }}>
+        {loading ? (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              height: "100%",
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexDirection: "column",
+            }}
+          >
+            <div className="bounce-loader">
+              <div></div>
+              <div></div>
+              <div></div>
+            </div>
+            <p style={{ color: "#555", marginTop: "1rem", fontSize: "0.95rem" }}>
+              Loading assignments...
+            </p>
+          </div>
+        ) : assignments.length === 0 ? (
+          <p style={{ color: "#666", marginBottom: "1rem", textAlign: "center" }}>
             No upcoming assignments this week.
           </p>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {assignments.map((assignment) => (
+            {assignments.map((assignment, index) => (
               <li
                 key={assignment.id}
                 style={{
@@ -99,6 +173,9 @@ function UpcomingEvents() {
                   justifyContent: "space-between",
                   alignItems: "center",
                   marginBottom: "0.75rem",
+                  opacity: 0,
+                  animation: "fadeInUp 0.5s ease forwards",
+                  animationDelay: `${index * 0.05}s`,
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", flex: 1 }}>
@@ -142,22 +219,28 @@ function UpcomingEvents() {
             ))}
           </ul>
         )}
-          <button
-          onClick={() => navigate("/assignments")}
-          style={{
-            width: "100%",
-            height: "45px",
-            backgroundColor: "#ffb703",
-            border: "3px solid #000",
-            borderRadius: "6px",
-            fontWeight: "bold",
-            fontSize: "18px",
-            cursor: "pointer",
-          }}
-        >
-          View Assignments
-        </button>
 
+        {!loading && (
+          <button
+            onClick={() => navigate("/assignments")}
+            style={{
+              width: "100%",
+              height: "45px",
+              backgroundColor: "#ffb703",
+              border: "3px solid #000",
+              borderRadius: "6px",
+              fontWeight: "bold",
+              fontSize: "18px",
+              cursor: "pointer",
+              marginTop: "1rem",
+              animation: "fadeInUp 0.4s ease forwards",
+              animationDelay: `${assignments.length * 0.05 + 0.2}s`,
+              opacity: 0,
+            }}
+          >
+            View Assignments
+          </button>
+        )}
       </div>
     </>
   );
