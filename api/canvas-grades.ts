@@ -1,46 +1,64 @@
-// pages/api/canvas-grades.ts
-import type { NextApiRequest, NextApiResponse } from "next";
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { token, domain } = req.query;
-
-  if (!token || !domain || typeof token !== "string" || typeof domain !== "string") {
-    return res.status(400).json({ error: "Missing token or domain" });
-  }
-
-  try {
-    // Step 1: Get user courses
-    const coursesRes = await fetch(`https://${domain}/api/v1/users/self/courses`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const courses = await coursesRes.json();
-
-    const gradeResults: { course: string; score: number }[] = [];
-
-    // Step 2: Loop through courses to get grades
-    for (const course of courses) {
-      const gradesRes = await fetch(
-        `https://${domain}/api/v1/courses/${course.id}/grades`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const gradeData = await gradesRes.json();
-      const score = gradeData?.enrollments?.[0]?.grades?.current_score;
-
-      if (score !== undefined && score !== null) {
-        gradeResults.push({
-          course: course.name,
-          score,
-        });
-      }
-    }
-
-    return res.status(200).json(gradeResults);
-  } catch (error) {
-    console.error("❌ Error fetching Canvas grades:", error);
-    return res.status(500).json({ error: "Failed to fetch profile" });
-  }
-}
+// export const config = {
+//     runtime: "edge",
+//   };
+  
+//   export default async function handler(req: Request) {
+//     const { searchParams } = new URL(req.url);
+//     const token = searchParams.get("token");
+//     const domain = searchParams.get("domain");
+  
+//     if (!token || !domain) {
+//       return new Response("Missing token or domain", {
+//         status: 400,
+//         headers: {
+//           "Content-Type": "application/json",
+//           "Access-Control-Allow-Origin": "*",
+//         },
+//       });
+//     }
+  
+//     try {
+//       const enrollmentsRes = await fetch(`https://${domain}/api/v1/users/self/enrollments`, {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       });
+  
+//       if (!enrollmentsRes.ok) {
+//         const error = await enrollmentsRes.text();
+//         return new Response(`Canvas API error: ${error}`, {
+//           status: 500,
+//           headers: {
+//             "Content-Type": "application/json",
+//             "Access-Control-Allow-Origin": "*",
+//           },
+//         });
+//       }
+  
+//       const enrollments = await enrollmentsRes.json();
+  
+//       const grades = enrollments
+//         .filter((e: any) => e.grades?.current_score !== null && e.course_id)
+//         .map((e: any) => ({
+//           course: `Course ID: ${e.course_id}`,
+//           score: e.grades.current_score,
+//         }));
+  
+//       return new Response(JSON.stringify(grades), {
+//         status: 200,
+//         headers: {
+//           "Content-Type": "application/json",
+//           "Access-Control-Allow-Origin": "*",
+//         },
+//       });
+//     } catch (err) {
+//       return new Response("Failed to fetch profile", {
+//         status: 500,
+//         headers: {
+//           "Content-Type": "application/json",
+//           "Access-Control-Allow-Origin": "*",
+//         },
+//       });
+//     }
+//   }
+  
