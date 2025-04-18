@@ -4,6 +4,8 @@ import WeeklyCalendar from "../components/WeeklyCalender";
 import { loadSchedule } from "../utils/scheduleStorage";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import GpaTracker from "../components/GpaTracker";
+
 import { db } from "../firebase";
 import DashboardHeader from "../components/DashboardHeader";
 
@@ -414,6 +416,8 @@ const inputStyle: React.CSSProperties = {
         </div>
 
         {/* GPA Tracker */}
+        <GpaTracker />
+
         {/* You can plug it back here when you resume GPA work */}
 
       </div>

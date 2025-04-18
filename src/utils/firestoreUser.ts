@@ -19,3 +19,23 @@ export async function updateColorPreferences(uid: string, preferences: Record<st
     colorPreferences: preferences,
   });
 }
+
+// ✅ updateTodos should accept an object
+export const updateTodos = async (uid: string, todos: Record<string, any[]>) => {
+  const docRef = doc(db, "users", uid);
+  await updateDoc(docRef, { todos });
+};
+
+// ✅ getTodos should return that same structure
+export const getTodos = async (uid: string): Promise<Record<string, any[]> | null> => {
+  const docRef = doc(db, "users", uid);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().todos || {
+      "get-started": [],
+      "ongoing": [],
+      "done": [],
+    };
+  }
+  return null;
+};
