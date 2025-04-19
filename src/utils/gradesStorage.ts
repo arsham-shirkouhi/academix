@@ -1,7 +1,7 @@
 // utils/gradesStorage.ts
 export type GradeEntry = {
-  classId: string;
-  grade: number;
+  course: string; // was classId before
+  score: number;  // was grade before
 };
 
 export const saveGrades = (grades: GradeEntry[]) => {

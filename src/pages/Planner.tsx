@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { saveSchedule, loadSchedule } from "../utils/scheduleStorage";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase";
+import { saveUserSchedule, loadUserSchedule, getUserSettings } from "../utils/firestoreUser";
 
 type ClassEntry = {
   id: string;
@@ -13,6 +14,7 @@ type ClassEntry = {
 
 function Planner() {
   const [schedule, setSchedule] = useState<ClassEntry[]>([]);
+  const [courseNames, setCourseNames] = useState<string[]>([]);
   const [newClass, setNewClass] = useState<ClassEntry>({
     id: crypto.randomUUID(),
     name: "",
@@ -25,8 +27,39 @@ function Planner() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const saved = loadSchedule();
-    setSchedule(saved);
+    const fetchScheduleAndCourses = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const [stored, settings] = await Promise.all([
+        loadUserSchedule(user.uid),
+        getUserSettings(user.uid)
+      ]);
+
+      setSchedule(stored);
+
+      if (settings?.token && settings?.domain) {
+        const cleanDomain = settings.domain.replace(/^https?:\/\//, "");
+        try {
+          const res = await fetch(`https://${cleanDomain}/api/v1/courses`, {
+            headers: {
+              Authorization: `Bearer ${settings.token}`,
+            },
+          });
+          const courses = await res.json();
+          const names = courses.map((c: any) => {
+            const full = c.name || "";
+            const parts = full.split(" - ");
+            return parts.length > 1 ? parts.slice(1).join(" - ").trim() : full;
+          });
+          setCourseNames(names);
+        } catch (err) {
+          console.error("❌ Failed to fetch courses:", err);
+        }
+      }
+    };
+
+    fetchScheduleAndCourses();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -34,10 +67,12 @@ function Planner() {
     setNewClass((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddClass = () => {
+  const handleAddClass = async () => {
     const updated = [...schedule, newClass];
     setSchedule(updated);
-    saveSchedule(updated);
+    const user = auth.currentUser;
+    if (user) await saveUserSchedule(user.uid, updated);
+
     setNewClass({
       id: crypto.randomUUID(),
       name: "",
@@ -48,10 +83,11 @@ function Planner() {
     });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const filtered = schedule.filter((cls) => cls.id !== id);
     setSchedule(filtered);
-    saveSchedule(filtered);
+    const user = auth.currentUser;
+    if (user) await saveUserSchedule(user.uid, filtered);
   };
 
   return (
@@ -63,28 +99,30 @@ function Planner() {
         <input
           type="text"
           name="name"
+          list="course-options"
           placeholder="Class Name (e.g. CS46B)"
           value={newClass.name}
           onChange={handleChange}
         />
+        <datalist id="course-options">
+          {courseNames.map((name, i) => (
+            <option key={i} value={name} />
+          ))}
+        </datalist>
+
         <select name="day" value={newClass.day} onChange={handleChange}>
           {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => (
             <option key={day}>{day}</option>
           ))}
         </select>
+
         <input type="time" name="startTime" value={newClass.startTime} onChange={handleChange} />
         <input type="time" name="endTime" value={newClass.endTime} onChange={handleChange} />
-        <input
-          type="text"
-          name="location"
-          placeholder="Location"
-          value={newClass.location}
-          onChange={handleChange}
-        />
+        <input type="text" name="location" placeholder="Location" value={newClass.location} onChange={handleChange} />
         <button onClick={handleAddClass}>Add Class</button>
       </div>
 
-      {/* Current Schedule */}
+      {/* Display Schedule */}
       <h3>🗓️ Current Schedule</h3>
       {schedule.length === 0 ? (
         <p>No classes added yet.</p>

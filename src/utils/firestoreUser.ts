@@ -39,3 +39,14 @@ export const getTodos = async (uid: string): Promise<Record<string, any[]> | nul
   }
   return null;
 };
+
+export const saveUserSchedule = async (uid: string, schedule: any[]) => {
+  const userRef = doc(db, "users", uid);
+  await updateDoc(userRef, { events: schedule });
+};
+
+export const loadUserSchedule = async (uid: string): Promise<any[]> => {
+  const userRef = doc(db, "users", uid);
+  const snapshot = await getDoc(userRef);
+  return snapshot.exists() ? snapshot.data().events || [] : [];
+};
