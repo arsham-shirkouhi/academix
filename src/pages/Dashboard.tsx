@@ -146,7 +146,7 @@ const inputStyle: React.CSSProperties = {
           display: "flex",
           alignItems: "center",
           gap: "8px",
-          width:"260px",
+          width:"270px",
           height: "45px"
         }}>
   <StreakIcon
@@ -323,13 +323,15 @@ const inputStyle: React.CSSProperties = {
 
       {/* Main Grid */}
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
-        gridAutoRows: "min-content",
-        gap: "15px",
-        alignItems: "start",
-      }}>
+  columnCount: 3,
+  columnGap: "12px",
+}}>
+
+
+
         {/* This Week */}
+        <div style={{ breakInside: "avoid", marginBottom: "12px" }}>
+
         <div style={{ border: "3px solid #1F0741", borderRadius: "16px", overflow: "hidden" }}>
           <div style={{ backgroundColor: "#1F0741", color: "#FFFBF1", padding: "0.75rem 1rem", fontSize: "24px", fontWeight: "bold" }}>
             This Week
@@ -340,44 +342,62 @@ const inputStyle: React.CSSProperties = {
             <p>📋 Tasks Done: <strong>3/5</strong></p>
           </div>
         </div>
+        </div>
 
         {/* Weekly Calendar */}
-        {schedule.length === 0 ? (
-          <div style={{
-            border: "3px solid #1F0741",
-            borderRadius: "16px",
-            overflow: "hidden",
-            backgroundColor: "#FFFBF1",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "2rem"
-          }}>
-            <div style={{ backgroundColor: "#1F0741", color: "#FFFBF1", width: "100%", padding: "0.75rem 1rem", fontSize: "24px", fontWeight: "bold" }}>
-              Schedule
-            </div>
-            <button
-              style={{
-                marginTop: "2rem",
-                padding: "1rem 2rem",
-                backgroundColor: "#2200ff",
-                color: "#FFFBF1",
-                fontSize: "1rem",
-                borderRadius: "10px",
-                border: "none",
-                cursor: "pointer",
-              }}
-              onClick={() => navigate("/planner")}
-            >
-              ➕ Add Weekly Schedule
-            </button>
-          </div>
-        ) : (
-          <WeeklyCalendar events={schedule} />
-        )}
+        <div style={{ 
+  border: "3px solid #1F0741", 
+  borderRadius: "16px", 
+  overflow: "hidden", 
+  backgroundColor: "#FFFBF1", 
+  display: "flex", 
+  flexDirection: "column", 
+  justifyContent: "start", 
+  alignItems: "stretch" 
+}}>
+  <div style={{ 
+    backgroundColor: "#1F0741", 
+    color: "#FFFBF1", 
+    width: "100%", 
+    padding: "0.75rem 1rem", 
+    fontSize: "24px", 
+    fontWeight: "bold" 
+  }}>
+    Schedule
+  </div>
+
+  {schedule.length === 0 ? (
+    <div style={{ padding: "1.5rem", display: "flex", justifyContent: "center" }}>
+      <button
+        style={{
+          padding: "1rem 2rem",
+          backgroundColor: "#2200ff",
+          color: "#FFFBF1",
+          fontSize: "1rem",
+          borderRadius: "10px",
+          border: "none",
+          cursor: "pointer",
+          fontWeight: "bold",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem"
+        }}
+        onClick={() => navigate("/planner")}
+      >
+        ➕ Add Weekly Schedule
+      </button>
+    </div>
+  ) : (
+    <div style={{ padding: "1rem" }}>
+      <WeeklyCalendar events={schedule} />
+    </div>
+  )}
+</div>
+
 
         {/* Upcoming */}
+        <div style={{ breakInside: "avoid", marginBottom: "12px" }}>
+
         <div style={{ border: "3px solid #1F0741", borderRadius: "16px", overflow: "hidden" }}>
           <div style={{ backgroundColor: "#1F0741", color: "#FFFBF1", padding: "0.75rem 1rem", fontSize: "24px", fontWeight: "bold" }}>
             Upcoming
@@ -387,8 +407,11 @@ const inputStyle: React.CSSProperties = {
           </div>
 
         </div>
+        </div>
 
         {/* To-Do */}
+        <div style={{ breakInside: "avoid", marginBottom: "12px" }}>
+
         <div style={{ border: "3px solid #1F0741", borderRadius: "16px", overflow: "hidden" }}>
           <div style={{ backgroundColor: "#1F0741", color: "#FFFBF1", padding: "0.75rem 1rem", fontSize: "24px", fontWeight: "bold" }}>
             To-Do
@@ -414,9 +437,30 @@ const inputStyle: React.CSSProperties = {
             </button>
           </div>
         </div>
+        </div>
 
         {/* GPA Tracker */}
-        <GpaTracker />
+        <div style={{ breakInside: "avoid", marginBottom: "12px" }}>
+  <div style={{
+    border: "3px solid #1F0741",
+    borderRadius: "16px",
+    overflow: "hidden",
+    backgroundColor: "#FFFBF1",
+  }}>
+    <div style={{
+      backgroundColor: "#1F0741",
+      color: "#FFFBF1",
+      padding: "0.75rem 1rem",
+      fontSize: "24px",
+      fontWeight: "bold",
+    }}>
+      Grade Overview
+    </div>
+    <div style={{ padding: "1rem" }}>
+      <GpaTracker />
+    </div>
+  </div>
+</div>
 
         {/* You can plug it back here when you resume GPA work */}
 

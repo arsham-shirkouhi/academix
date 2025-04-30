@@ -80,8 +80,7 @@ function GpaTracker() {
     : null;
 
   return (
-    <div style={{ backgroundColor: "#f0f0f0", padding: "1rem", borderRadius: "8px" }}>
-      <h3 style={{ color: "#1F0741" }}>📘 Grade Overview</h3>
+    <div style={{ backgroundColor: "", padding: "0rem"}}>
 
       {loading ? (
         <p>Loading grades...</p>
@@ -89,16 +88,16 @@ function GpaTracker() {
         <p>No grades found.</p>
       ) : (
         <>
-          <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem" }}>
+          <ul style={{ listStyle: "none", padding: 0 }}>
             {grades.map((g, i) => (
               <li key={i} style={{ marginBottom: "6px", fontSize: "1rem" }}>
                 <strong>{g.course}</strong>: {g.score.toFixed(1)}%
               </li>
             ))}
           </ul>
-          <hr style={{ margin: "1rem 0", border: "1px solid #ccc" }} />
-          <p style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#1F0741" }}>
-            🎓 Projected GPA: <span style={{ fontWeight: "900" }}>{projectedGpa}</span>
+          <hr style={{ margin: "0.5rem 0", border: "1px solid #1F0741" }} />
+          <p style={{ fontWeight: "bold", fontSize: "16px", color: "#1F0741" }}>
+            Projected GPA: <span style={{ fontWeight: "900" }}>{projectedGpa}</span>
           </p>
         </>
       )}

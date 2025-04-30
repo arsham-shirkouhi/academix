@@ -12,9 +12,13 @@ type ClassEntry = {
   location: string;
 };
 
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const HOURS = Array.from({ length: 12 }, (_, i) => `${8 + i}:00`);
+
 function Planner() {
   const [schedule, setSchedule] = useState<ClassEntry[]>([]);
   const [courseNames, setCourseNames] = useState<string[]>([]);
+  const [showForm, setShowForm] = useState(false);
   const [newClass, setNewClass] = useState<ClassEntry>({
     id: crypto.randomUUID(),
     name: "",
@@ -42,9 +46,7 @@ function Planner() {
         const cleanDomain = settings.domain.replace(/^https?:\/\//, "");
         try {
           const res = await fetch(`https://${cleanDomain}/api/v1/courses`, {
-            headers: {
-              Authorization: `Bearer ${settings.token}`,
-            },
+            headers: { Authorization: `Bearer ${settings.token}` }
           });
           const courses = await res.json();
           const names = courses.map((c: any) => {
@@ -72,7 +74,7 @@ function Planner() {
     setSchedule(updated);
     const user = auth.currentUser;
     if (user) await saveUserSchedule(user.uid, updated);
-
+    setShowForm(false);
     setNewClass({
       id: crypto.randomUUID(),
       name: "",
@@ -83,62 +85,135 @@ function Planner() {
     });
   };
 
-  const handleDelete = async (id: string) => {
-    const filtered = schedule.filter((cls) => cls.id !== id);
-    setSchedule(filtered);
-    const user = auth.currentUser;
-    if (user) await saveUserSchedule(user.uid, filtered);
+  const renderEvents = (day: string) => {
+    const eventsForDay = schedule.filter((cls) => cls.day === day);
+    return eventsForDay.map((cls) => {
+      const top = (parseInt(cls.startTime.split(":")[0]) - 8) * 60;
+      const height = (parseInt(cls.endTime.split(":")[0]) - parseInt(cls.startTime.split(":")[0])) * 60;
+
+      return (
+        <div
+          key={cls.id}
+          style={{
+            position: "absolute",
+            top: `${top}px`,
+            height: `${height}px`,
+            left: "5%",
+            width: "90%",
+            background: "#1f0741",
+            color: "#fff",
+            borderRadius: "6px",
+            padding: "4px",
+            fontSize: "12px",
+            zIndex: 10,
+            border: "2px solid #fff",
+          }}
+        >
+          <strong>{cls.name}</strong><br />
+          {cls.startTime}–{cls.endTime}<br />
+          {cls.location}
+        </div>
+      );
+    });
   };
 
   return (
     <div style={{ padding: "2rem" }}>
-      <h2>📚 Plan Your Weekly Schedule</h2>
+      <h2>Weekly Planner</h2>
 
-      {/* Form */}
-      <div style={{ marginTop: "1rem", marginBottom: "2rem", display: "flex", flexDirection: "column", gap: "0.5rem", maxWidth: "400px" }}>
-        <input
-          type="text"
-          name="name"
-          list="course-options"
-          placeholder="Class Name (e.g. CS46B)"
-          value={newClass.name}
-          onChange={handleChange}
-        />
-        <datalist id="course-options">
-          {courseNames.map((name, i) => (
-            <option key={i} value={name} />
+      <div style={{ border: "3px solid #1f0741", borderRadius: "12px", overflow: "hidden" }}>
+        {/* Header */}
+        <div style={{ display: "flex", background: "#ffb703", fontWeight: "bold" }}>
+          <div style={{ width: "60px" }} />
+          {DAYS.map((day) => (
+            <div key={day} style={{ flex: 1, textAlign: "center", padding: "8px", borderLeft: "1px solid #1f0741" }}>
+              {day}
+            </div>
           ))}
-        </datalist>
+        </div>
 
-        <select name="day" value={newClass.day} onChange={handleChange}>
-          {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => (
-            <option key={day}>{day}</option>
+        {/* Grid */}
+        <div style={{ display: "flex" }}>
+          {/* Time slots */}
+          <div style={{ display: "flex", flexDirection: "column", width: "60px" }}>
+            {HOURS.map((hour) => (
+              <div key={hour} style={{ height: "30px", padding: "4px", fontSize: "12px", color: "#666", borderTop: "1px solid #ddd" }}>
+                {hour}
+              </div>
+            ))}
+          </div>
+
+          {/* Day columns */}
+          {DAYS.map((day) => (
+            <div key={day} style={{ flex: 1, borderLeft: "1px solid #ddd", position: "relative" }}>
+              {renderEvents(day)}
+            </div>
           ))}
-        </select>
-
-        <input type="time" name="startTime" value={newClass.startTime} onChange={handleChange} />
-        <input type="time" name="endTime" value={newClass.endTime} onChange={handleChange} />
-        <input type="text" name="location" placeholder="Location" value={newClass.location} onChange={handleChange} />
-        <button onClick={handleAddClass}>Add Class</button>
+        </div>
       </div>
 
-      {/* Display Schedule */}
-      <h3>🗓️ Current Schedule</h3>
-      {schedule.length === 0 ? (
-        <p>No classes added yet.</p>
-      ) : (
-        <ul>
-          {schedule.map((cls) => (
-            <li key={cls.id}>
-              <strong>{cls.name}</strong> – {cls.day} @ {cls.startTime}–{cls.endTime} ({cls.location})
-              <button onClick={() => handleDelete(cls.id)} style={{ marginLeft: "1rem" }}>❌</button>
-            </li>
-          ))}
-        </ul>
+      {/* Floating + Button */}
+      <button
+        onClick={() => setShowForm(true)}
+        style={{
+          position: "fixed",
+          bottom: "2rem",
+          right: "2rem",
+          width: "60px",
+          height: "60px",
+          fontSize: "32px",
+          borderRadius: "50%",
+          background: "#ffb703",
+          color: "#1f0741",
+          border: "3px solid #1f0741",
+          cursor: "pointer"
+        }}
+      >
+        ＋
+      </button>
+
+      {/* Modal Form */}
+      {showForm && (
+        <div style={{
+          position: "fixed",
+          top: 0, left: 0, width: "100%", height: "100%",
+          background: "rgba(0,0,0,0.3)",
+          display: "flex", justifyContent: "center", alignItems: "center"
+        }}>
+          <div style={{
+            background: "#fff",
+            padding: "2rem",
+            borderRadius: "12px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.2)"
+          }}>
+            <h3>Add Class / Event</h3>
+            <input
+              type="text"
+              name="name"
+              list="course-options"
+              placeholder="Class Name"
+              value={newClass.name}
+              onChange={handleChange}
+              style={{ marginBottom: "0.5rem", width: "100%" }}
+            />
+            <datalist id="course-options">
+              {courseNames.map((name, i) => <option key={i} value={name} />)}
+            </datalist>
+            <select name="day" value={newClass.day} onChange={handleChange} style={{ marginBottom: "0.5rem", width: "100%" }}>
+              {DAYS.map((d) => <option key={d}>{d}</option>)}
+            </select>
+            <input type="time" name="startTime" value={newClass.startTime} onChange={handleChange} style={{ marginBottom: "0.5rem", width: "100%" }} />
+            <input type="time" name="endTime" value={newClass.endTime} onChange={handleChange} style={{ marginBottom: "0.5rem", width: "100%" }} />
+            <input type="text" name="location" value={newClass.location} onChange={handleChange} placeholder="Location" style={{ marginBottom: "0.5rem", width: "100%" }} />
+            <div style={{ marginTop: "1rem" }}>
+              <button onClick={handleAddClass}>✅ Add</button>
+              <button onClick={() => setShowForm(false)} style={{ marginLeft: "1rem" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
 
-      <br />
-      <button onClick={() => navigate("/")}>⬅️ Back to Dashboard</button>
+      <button onClick={() => navigate("/")} style={{ marginTop: "2rem" }}>⬅️ Back to Dashboard</button>
     </div>
   );
 }
