@@ -74,12 +74,11 @@ function UpcomingEvents() {
 
   const getUrgencyColor = (daysLeft: number | undefined) => {
     if (daysLeft === undefined) return "#1F0741";
-    if(daysLeft <= 1) return "#DF1b1b"
+    if (daysLeft <= 1) return "#DF1b1b";
     if (daysLeft <= 3) return "#FF6A00";
     if (daysLeft <= 5) return "#FFB200";
     return "#1DB815";
   };
-
 
   return (
     <>
@@ -93,134 +92,102 @@ function UpcomingEvents() {
             0% { opacity: 0; transform: translateY(10px); }
             100% { opacity: 1; transform: translateY(0); }
           }
-
-          @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-          }
-
-          .bounce-loader {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-          }
-
-          .bounce-loader div {
-            width: 12px;
-            height: 12px;
-            background-color: #1f0741;
-            border-radius: 50%;
-            animation: bounce 1.2s infinite ease-in-out;
-          }
-
-          .bounce-loader div:nth-child(2) {
-            animation-delay: -0.2s;
-          }
-
-          .bounce-loader div:nth-child(3) {
-            animation-delay: -0.4s;
-          }
         `}
       </style>
 
       <div
-        className="no-scrollbar"
         style={{
-          maxHeight: "320px",
-          minHeight: "320px",
-          overflowY: "auto",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-          padding: "16px",
-          position: "relative",
+          backgroundColor: "#FFFBF1",
+          borderRadius: "0 0 16px 16px",
+          height: "320px", // Keep same height
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden", // Prevent content overflow
         }}
       >
-        {loading ? (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              height: "100%",
-              width: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              flexDirection: "column",
-            }}
-          >
-            <div className="bounce-loader">
-              <div></div>
-              <div></div>
-              <div></div>
-            </div>
-            <p style={{ color: "#555", marginTop: "1rem", fontSize: "0.95rem" }}>
-              Loading assignments...
+        {/* Scrollable area */}
+        <div
+          className="no-scrollbar"
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "16px",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
+          {loading ? (
+            <p>Loading assignments...</p>
+          ) : assignments.length === 0 ? (
+            <p style={{ color: "#666", marginBottom: "1rem", textAlign: "center" }}>
+              No upcoming assignments this week.
             </p>
-          </div>
-        ) : assignments.length === 0 ? (
-          <p style={{ color: "#666", marginBottom: "1rem", textAlign: "center" }}>
-            No upcoming assignments this week.
-          </p>
-        ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {assignments.map((assignment, index) => (
-              <li
-                key={assignment.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "0.75rem",
-                  opacity: 0,
-                  animation: "fadeInUp 0.5s ease forwards",
-                  animationDelay: `${index * 0.05}s`,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", flex: 1 }}>
-                  <span
-                    style={{
-                      width: "17.5px",
-                      height: "17.5px",
-                      minWidth: "17.5px",
-                      minHeight: "17.5px",
-                      display: "inline-block",
-                      boxSizing: "border-box",
-                      borderRadius: "5px",
-                      backgroundColor: getUrgencyColor(assignment.daysLeft),
-                      marginRight: "0.6rem",
-                      border: "2px solid #000",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span
-                    style={{
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      maxWidth: "200px",
-                    }}
-                  >
-                    {assignment.title}
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    color: "#1F0741",
-                  }}
-                >
-                  in {assignment.daysLeft} day
-                  {assignment.daysLeft !== 1 ? "s" : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+          ) : (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+{assignments.map((assignment, index) => (
+  <li
+    key={assignment.id}
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: index === assignments.length - 1 ? "0" : "0.75rem",
+      opacity: 0,
+      animation: "fadeInUp 0.5s ease forwards",
+      animationDelay: `${index * 0.05}s`,
+    }}
+  >
+    <div style={{ display: "flex", alignItems: "center", flex: 1 }}>
+      <span
+        style={{
+          width: "17.5px",
+          height: "17.5px",
+          minWidth: "17.5px",
+          minHeight: "17.5px",
+          display: "inline-block",
+          borderRadius: "5px",
+          backgroundColor: getUrgencyColor(assignment.daysLeft),
+          marginRight: "0.6rem",
+          border: "2px solid #000",
+          flexShrink: 0,
+        }}
+      />
+      <span
+        style={{
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          maxWidth: "200px",
+        }}
+      >
+        {assignment.title}
+      </span>
+    </div>
+    <span
+      style={{
+        fontSize: "16px",
+        fontWeight: 600,
+        color: "#1F0741",
+      }}
+    >
+      in {assignment.daysLeft} day
+      {assignment.daysLeft !== 1 ? "s" : ""}
+    </span>
+  </li>
+))}
 
-        {!loading && (
+            </ul>
+          )}
+        </div>
+
+        {/* Fixed Button at bottom */}
+        <div
+          style={{
+            padding: "15px 15px 15px 15px", 
+            backgroundColor: "#FFFBF1",
+          }}
+        >
+
           <button
             onClick={() => navigate("/assignments")}
             style={{
@@ -232,15 +199,11 @@ function UpcomingEvents() {
               fontWeight: "bold",
               fontSize: "18px",
               cursor: "pointer",
-              marginTop: "1rem",
-              animation: "fadeInUp 0.4s ease forwards",
-              animationDelay: `${assignments.length * 0.05 + 0.2}s`,
-              opacity: 0,
             }}
           >
             View Assignments
           </button>
-        )}
+        </div>
       </div>
     </>
   );

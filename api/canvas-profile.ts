@@ -1,14 +1,18 @@
-// /api/canvas-profile.ts
+export const config = {
+  runtime: "edge",
+};
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+export default async function handler(req: Request) {
+  const { searchParams } = new URL(req.url);
 
-  const { token, domain } = req.body;
+  const token = searchParams.get("token");
+  const domain = searchParams.get("domain");
 
   if (!token || !domain) {
-    return res.status(400).json({ error: "Missing token or domain" });
+    return new Response(
+      JSON.stringify({ error: "Missing token or domain" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   try {
@@ -22,12 +26,22 @@ export default async function handler(req: any, res: any) {
 
     if (!response.ok) {
       console.error("Canvas error:", data);
-      return res.status(response.status).json({ error: "Failed to fetch profile", details: data });
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch profile", details: data }),
+        { status: response.status, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    return res.status(200).json(data);
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+
   } catch (err: any) {
     console.error("Server error:", err.message);
-    return res.status(500).json({ error: "Unexpected error", details: err.message });
+    return new Response(
+      JSON.stringify({ error: "Unexpected error", details: err.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }

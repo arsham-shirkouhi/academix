@@ -4,7 +4,7 @@ export const config = {
 
 export default async function handler(req: Request) {
   try {
-    const { token, domain } = await req.json();
+    const { token, domain, type = "events" } = await req.json();
 
     if (!token || !domain) {
       return new Response(
@@ -13,7 +13,12 @@ export default async function handler(req: Request) {
       );
     }
 
-    const canvasUrl = `${domain}/api/v1/users/self/upcoming_events`;
+    const path =
+      type === "courses"
+        ? "/api/v1/courses"
+        : "/api/v1/users/self/upcoming_events";
+
+    const canvasUrl = `${domain}${path}`;
     console.log("📡 Requesting:", canvasUrl);
 
     const response = await fetch(canvasUrl, {

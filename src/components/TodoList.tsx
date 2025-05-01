@@ -1,32 +1,249 @@
+import { useEffect, useState } from "react";
+import { auth, db } from "../firebase";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+
 type TodoItem = {
-    id: number;
-    text: string;
-    completed: boolean;
-  };
-  
-  const mockTodos: TodoItem[] = [
-    { id: 1, text: "physics homework", completed: false },
-    { id: 2, text: "math assignment", completed: false },
-    { id: 3, text: "cs zybook", completed: false },
-    { id: 4, text: "presentation slides", completed: false },
-  ];
-  
-  function TodoList() {
-    return (
-      <div style={{ backgroundColor: "#f0f0f0", padding: "1rem", borderRadius: "8px" }}>
-        <h3>To-Do</h3>
-        <ul style={{ paddingLeft: "1rem" }}>
-          {mockTodos.map((todo) => (
-            <li key={todo.id}>
-              <input type="checkbox" checked={todo.completed} readOnly />{" "}
-              {todo.text}
-            </li>
-          ))}
-        </ul>
-        <button style={{ marginTop: "1rem" }}>View To-Do’s</button>
-      </div>
+  id: string;
+  text: string;
+  completed: boolean;
+};
+
+function TodoList() {
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+
+    const fetchTodos = async (userId: string) => {
+      const userDocRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userDocRef);
+
+      if (!userSnap.exists()) {
+        console.warn("No user document found.");
+        setTodos([]);
+        setLoading(false);
+        return;
+      }
+
+      const userData = userSnap.data();
+      const getStartedArray = userData?.todos?.["get-started"] || [];
+
+      const fetchedTodos: TodoItem[] = getStartedArray.map(
+        (item: any, index: number) => ({
+          id: String(index),
+          text: item.text || item.subject || "Untitled task",
+          completed: false, // always start as not completed
+        })
+      );
+
+      setTodos(fetchedTodos);
+      setLoading(false);
+    };
+
+    unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchTodos(user.uid);
+      } else {
+        setTodos([]);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  const handleCheck = async (id: string) => {
+    // Update UI immediately
+    const updated = todos.map((todo) =>
+      todo.id === id ? { ...todo, completed: true } : todo
     );
-  }
-  
-  export default TodoList;
-  
+    setTodos(updated);
+
+    // 🔥 Remove from Firestore too
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userDocRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userDocRef);
+    if (!userSnap.exists()) return;
+
+    const userData = userSnap.data();
+    const getStartedArray = userData?.todos?.["get-started"] || [];
+
+    // Keep the item here to avoid the TS error and actually use it:
+    const newArray = getStartedArray.filter(
+      (item: any, index: number) => {
+        const keep = String(index) !== id;
+        // Just to use 'item' and avoid the TS warning:
+        if (!keep) {
+          console.log("Removing item:", item); // or any other logic if needed
+        }
+        return keep;
+      }
+    );
+
+    await updateDoc(userDocRef, {
+      [`todos.get-started`]: newArray,
+    });
+  };
+
+  return (
+    <div
+      style={{
+        backgroundColor: "#FFFBF1",
+        borderRadius: "0 0 16px 16px",
+        height:"300px",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <style>
+        {`
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+
+          @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+
+          @keyframes slideOut {
+            0% { 
+              opacity: 1; 
+              transform: translateX(0); 
+              height: 24px;
+              margin-bottom: 0.75rem;
+            }
+            70% {
+              opacity: 0;
+              transform: translateX(100px);
+              height: 24px;
+              margin-bottom: 0.75rem;
+            }
+            100% { 
+              opacity: 0; 
+              transform: translateX(100px); 
+              height: 0;
+              margin-bottom: 0;
+            }
+          }
+        `}
+      </style>
+
+      <div
+        className="no-scrollbar"
+        style={{
+          flexGrow: 1,
+          overflowY: "auto",
+          paddingRight: "8px",
+          paddingLeft: "0",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          position: "relative",
+        }}
+      >
+        {loading ? (
+          <div>Loading tasks...</div>
+        ) : todos.filter((todo) => !todo.completed).length > 0 ? (
+          todos.map((todo, index) => (
+            <div
+              key={todo.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom:
+                  index === todos.length - 1 ? "0" : "0.75rem",
+                opacity: 0,
+                animation: todo.completed
+                  ? "slideOut 0.8s forwards"
+                  : `fadeInUp 0.5s ease forwards`,
+                animationDelay: todo.completed
+                  ? "0s"
+                  : `${index * 0.05}s`,
+                transition: "transform 0.5s ease, opacity 0.5s ease",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  flex: 1,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={todo.completed}
+                  onChange={() => handleCheck(todo.id)}
+                  style={{
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    width: "18px",
+                    height: "18px",
+                    border: "2.5px solid #000",
+                    borderRadius: "6px",
+                    backgroundColor: todo.completed ? "green" : "white",
+                    cursor: "pointer",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "normal",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: "200px",
+                  }}
+                >
+                  {todo.text}
+                </span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: "bold",
+              color: "#1F0741",
+              textAlign: "center",
+            }}
+          >
+            Yay! no more things to do for now!
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={() => navigate("/todo")}
+        style={{
+          width: "100%",
+          height: "45px",
+          backgroundColor: "#ffb703",
+          border: "3px solid #000",
+          borderRadius: "6px",
+          fontWeight: "bold",
+          fontSize: "18px",
+          cursor: "pointer",
+          marginTop: "0.5rem",
+        }}
+      >
+        View To-do's
+      </button>
+    </div>
+  );
+}
+
+export default TodoList;

@@ -1,6 +1,8 @@
 /* src/index.css */
 
-body, html {
+body {
   background-color: #FBF5E5;
-
+  height: 100%;
+  overflow: hidden;  /* 👈 This stops the entire page from scrolling */
+  margin: 0;
 }

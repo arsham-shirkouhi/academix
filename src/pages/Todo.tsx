@@ -19,6 +19,9 @@ function Todo() {
   const [isOverTrash, setIsOverTrash] = useState(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
+  const [hasMounted, setHasMounted] = useState(false);
+  const [animatedIds, setAnimatedIds] = useState<string[]>([]);
+
   const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
   useEffect(() => {
@@ -43,6 +46,7 @@ function Todo() {
       }
     };
     fetchData();
+    setHasMounted(true);
   }, []);
 
   const saveTodos = async (newTodos: Record<string, any[]>) => {
@@ -152,56 +156,81 @@ function Todo() {
               flexGrow: 1,
             }}
           >
-            {todos[columnId]?.map((todo, index) => (
-              <Draggable key={todo.id} draggableId={todo.id} index={index}>
-  {(provided) => (
-    <div
-      ref={provided.innerRef}
-      {...provided.draggableProps}
-      {...provided.dragHandleProps}
-      style={{
-        display: "flex",
-        background: "#FFFBF1",
-        border: "3px solid #1F0741",
-        borderRadius: "10px",
-        overflow: "hidden",
-        marginBottom: "12px",
-        transform:
-          isOverTrash && activeDragId === todo.id
-            ? "scale(0.95) rotate(-5deg)"
-            : "none",
-        transition: "transform 0.2s ease",
-        ...provided.draggableProps.style,
-      }}
-    >
-      {/* Priority Stripe */}
-      <div
-        style={{
-          width: "10px",
-          backgroundColor: getPriorityColor(todo.priority),
-        }}
-      />
 
-      {/* Content */}
-      <div style={{ padding: "14px 16px", flex: 1 }}>
-        <strong style={{ fontSize: "18px", color: "#1F0741" }}>{todo.text}</strong>
-        <div style={{ fontSize: "16px", color: "#1F0741" }}>
-          {todo.subject}
-          {/* {todo.subject} | {todo.priority} */}
+<style>
+  {`
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+  `}
+</style>
+
+{todos[columnId]?.map((todo, index) => {
+  const shouldAnimate = hasMounted && !animatedIds.includes(todo.id);
+
+  return (
+    <Draggable key={todo.id} draggableId={todo.id} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          style={{
+            display: "flex",
+            background: "#FFFBF1",
+            border: "3px solid #1F0741",
+            borderRadius: "10px",
+            overflow: "hidden",
+            marginBottom: "12px",
+            transform:
+              isOverTrash && activeDragId === todo.id
+                ? "scale(0.95) rotate(-5deg)"
+                : provided.draggableProps.style?.transform || "none",
+            transition: snapshot.isDragging ? "none" : "transform 0.2s ease",
+
+            ...(shouldAnimate
+              ? {
+                  opacity: 0,
+                  animation: "fadeInUp 0.5s ease forwards",
+                  animationDelay: `${index * 0.05}s`,
+                }
+              : {}),
+
+            ...provided.draggableProps.style,
+          }}
+          onAnimationEnd={() => {
+            if (!animatedIds.includes(todo.id)) {
+              setAnimatedIds((prev) => [...prev, todo.id]);
+            }
+          }}
+        >
+          <div
+            style={{
+              width: "10px",
+              backgroundColor: getPriorityColor(todo.priority),
+            }}
+          />
+
+          <div style={{ padding: "14px 16px", flex: 1 }}>
+            <strong style={{ fontSize: "18px", color: "#1F0741" }}>{todo.text}</strong>
+            <div style={{ fontSize: "16px", color: "#1F0741" }}>
+              {todo.subject}
+            </div>
+            <div style={{ fontSize: "14px", color: "#1F0741" }}>
+              {new Date(todo.createdAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+              })}
+            </div>
+          </div>
         </div>
-        <div style={{ fontSize: "14px", color: "#1F0741" }}>
-        {new Date(todo.createdAt).toLocaleDateString("en-US", {
-  year: "numeric",
-  month: "long",
-  day: "numeric"
+      )}
+    </Draggable>
+  );
 })}
-        </div>
-      </div>
-    </div>
-  )}
-</Draggable>
 
-            ))}
             {provided.placeholder}
           </div>
         )}
@@ -212,7 +241,6 @@ function Todo() {
   return (
     <div style={{ margin: "15px", position: "relative" }}>
       <DragDropContext onDragEnd={onDragEnd} onDragUpdate={onDragUpdate}>
-        {/* Header Row with Title + Trash */}
         <div
           style={{
             display: "flex",
@@ -248,7 +276,6 @@ function Todo() {
           </Droppable>
         </div>
 
-        {/* Input Form */}
         <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
           <input
             type="text"
@@ -312,7 +339,6 @@ function Todo() {
           </button>
         </div>
 
-        {/* To-Do Columns */}
         <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
           {COLUMN_TYPES.map((colId) => renderColumn(colId, colId.replace("-", " ")))}
         </div>

@@ -10,6 +10,7 @@ type ClassEntry = {
   startTime: string;
   endTime: string;
   location: string;
+  type: "" | "Class" | "Study" | "Workout" | "Free";
 };
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -22,10 +23,11 @@ function Planner() {
   const [newClass, setNewClass] = useState<ClassEntry>({
     id: crypto.randomUUID(),
     name: "",
-    day: "Monday",
+    day: "",
     startTime: "",
     endTime: "",
     location: "",
+    type: "",
   });
 
   const navigate = useNavigate();
@@ -45,9 +47,14 @@ function Planner() {
       if (settings?.token && settings?.domain) {
         const cleanDomain = settings.domain.replace(/^https?:\/\//, "");
         try {
-          const res = await fetch(`https://${cleanDomain}/api/v1/courses`, {
-            headers: { Authorization: `Bearer ${settings.token}` }
+          const res = await fetch("/api/canvas-courses", {
+            method: "POST",
+            body: JSON.stringify({
+              token: settings.token,
+              domain: `https://${cleanDomain}`,
+            }),
           });
+
           const courses = await res.json();
           const names = courses.map((c: any) => {
             const full = c.name || "";
@@ -70,27 +77,48 @@ function Planner() {
   };
 
   const handleAddClass = async () => {
-    const updated = [...schedule, newClass];
+    if (
+      !newClass.name ||
+      !newClass.day ||
+      !newClass.startTime ||
+      !newClass.endTime ||
+      !newClass.location ||
+      !newClass.type
+    ) {
+      alert("Please fill in all fields before adding the event.");
+      return;
+    }
+
+    const updated = [...schedule, { ...newClass, id: crypto.randomUUID() }];
     setSchedule(updated);
+
     const user = auth.currentUser;
     if (user) await saveUserSchedule(user.uid, updated);
+
     setShowForm(false);
     setNewClass({
       id: crypto.randomUUID(),
       name: "",
-      day: "Monday",
+      day: "",
       startTime: "",
       endTime: "",
       location: "",
+      type: "",
     });
   };
 
   const renderEvents = (day: string) => {
     const eventsForDay = schedule.filter((cls) => cls.day === day);
+  
+    const getMinutes = (t: string) => {
+      const [h, m] = t.split(":").map(Number);
+      return (h - 8) * 60 + m;
+    };
+  
     return eventsForDay.map((cls) => {
-      const top = (parseInt(cls.startTime.split(":")[0]) - 8) * 60;
-      const height = (parseInt(cls.endTime.split(":")[0]) - parseInt(cls.startTime.split(":")[0])) * 60;
-
+      const top = getMinutes(cls.startTime) * 0.5;  // ✅ 0.5 px per minute = 30px/hour
+      const height = (getMinutes(cls.endTime) - getMinutes(cls.startTime)) * 0.5;
+  
       return (
         <div
           key={cls.id}
@@ -116,13 +144,13 @@ function Planner() {
       );
     });
   };
+  
 
   return (
     <div style={{ padding: "2rem" }}>
       <h2>Weekly Planner</h2>
 
       <div style={{ border: "3px solid #1f0741", borderRadius: "12px", overflow: "hidden" }}>
-        {/* Header */}
         <div style={{ display: "flex", background: "#ffb703", fontWeight: "bold" }}>
           <div style={{ width: "60px" }} />
           {DAYS.map((day) => (
@@ -132,9 +160,7 @@ function Planner() {
           ))}
         </div>
 
-        {/* Grid */}
         <div style={{ display: "flex" }}>
-          {/* Time slots */}
           <div style={{ display: "flex", flexDirection: "column", width: "60px" }}>
             {HOURS.map((hour) => (
               <div key={hour} style={{ height: "30px", padding: "4px", fontSize: "12px", color: "#666", borderTop: "1px solid #ddd" }}>
@@ -143,7 +169,6 @@ function Planner() {
             ))}
           </div>
 
-          {/* Day columns */}
           {DAYS.map((day) => (
             <div key={day} style={{ flex: 1, borderLeft: "1px solid #ddd", position: "relative" }}>
               {renderEvents(day)}
@@ -152,7 +177,6 @@ function Planner() {
         </div>
       </div>
 
-      {/* Floating + Button */}
       <button
         onClick={() => setShowForm(true)}
         style={{
@@ -172,7 +196,6 @@ function Planner() {
         ＋
       </button>
 
-      {/* Modal Form */}
       {showForm && (
         <div style={{
           position: "fixed",
@@ -184,7 +207,8 @@ function Planner() {
             background: "#fff",
             padding: "2rem",
             borderRadius: "12px",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.2)"
+            boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+            width: "300px"
           }}>
             <h3>Add Class / Event</h3>
             <input
@@ -199,9 +223,20 @@ function Planner() {
             <datalist id="course-options">
               {courseNames.map((name, i) => <option key={i} value={name} />)}
             </datalist>
+
+            <select name="type" value={newClass.type} onChange={handleChange} style={{ marginBottom: "0.5rem", width: "100%" }}>
+              <option value="" disabled>Select type</option>
+              <option value="Class">Class</option>
+              <option value="Study">Study</option>
+              <option value="Workout">Workout</option>
+              <option value="Free">Free</option>
+            </select>
+
             <select name="day" value={newClass.day} onChange={handleChange} style={{ marginBottom: "0.5rem", width: "100%" }}>
+              <option value="" disabled>Select day</option>
               {DAYS.map((d) => <option key={d}>{d}</option>)}
             </select>
+
             <input type="time" name="startTime" value={newClass.startTime} onChange={handleChange} style={{ marginBottom: "0.5rem", width: "100%" }} />
             <input type="time" name="endTime" value={newClass.endTime} onChange={handleChange} style={{ marginBottom: "0.5rem", width: "100%" }} />
             <input type="text" name="location" value={newClass.location} onChange={handleChange} placeholder="Location" style={{ marginBottom: "0.5rem", width: "100%" }} />
