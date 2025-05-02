@@ -85,7 +85,7 @@ function DashboardHeader() {
           const week =
             Math.floor(
               (now.getTime() - parsedStart.getTime()) /
-                (1000 * 60 * 60 * 24 * 7)
+              (1000 * 60 * 60 * 24 * 7)
             ) + 1;
           setCurrentWeek(week > 0 ? week : 0);
         }
@@ -133,7 +133,7 @@ function DashboardHeader() {
           </span>
         </p>
       </div>
-      <div style={{ textAlign: "right", color: "#21003b"}}>
+      <div style={{ textAlign: "right", color: "#21003b" }}>
         <p style={{ margin: 0 }}>{formattedDate}</p>
         <p style={{ margin: 0 }}>
           <strong>
