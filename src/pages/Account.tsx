@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchUpcomingEvents, fetchCalendarEvents } from "../utils/canvasApi";
+import { fetchUpcomingEvents, fetchCalendarEvents, fetchUserProfile } from "../utils/canvasApi";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { getUserSettings, saveUserSettings } from "../utils/firestoreUser";
+
+
 
 function Account({ setEvents, setCalendarEvents }: any) {
   const [token, setToken] = useState("");
   const [domain, setDomain] = useState("https://sjsu.instructure.com");
   const [editing, setEditing] = useState(false);
   const [email, setEmail] = useState("");
-  const navigate = useNavigate();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
+  const navigate = useNavigate();
   const user = auth.currentUser;
 
   useEffect(() => {
@@ -22,6 +25,17 @@ function Account({ setEvents, setCalendarEvents }: any) {
         if (data) {
           setToken(data.token || "");
           setDomain(data.domain || "https://sjsu.instructure.com");
+
+          // ✅ Fetch profile picture if token and domain exist
+          if (data.token && data.domain) {
+            fetchUserProfile(data.token, data.domain)
+              .then((profile) => {
+                setAvatarUrl(profile.avatar_url || null);
+              })
+              .catch(() => {
+                setAvatarUrl(null);
+              });
+          }
         }
       });
     }
@@ -34,6 +48,7 @@ function Account({ setEvents, setCalendarEvents }: any) {
       await saveUserSettings(user.uid, { token, domain });
       setEditing(false);
 
+      // Refetch events when saving
       if (setEvents && setCalendarEvents) {
         const data = await fetchUpcomingEvents(token, domain);
         setEvents(data);
@@ -42,7 +57,11 @@ function Account({ setEvents, setCalendarEvents }: any) {
         setCalendarEvents(calendar);
       }
 
-      console.log("✅ Token saved to Firestore and data fetched.");
+      // Refetch avatar after saving
+      const profile = await fetchUserProfile(token, domain);
+      setAvatarUrl(profile.avatar_url || null);
+
+      console.log("✅ Token saved and profile refreshed.");
     } catch (err) {
       console.error("❌ Error saving token:", err);
     }
@@ -68,13 +87,32 @@ function Account({ setEvents, setCalendarEvents }: any) {
       <h1 style={{ fontSize: "2rem", marginBottom: "1rem" }}>Account Settings</h1>
 
       <div style={{ background: "#f9f9f9", padding: "1.5rem", borderRadius: "8px" }}>
+
+        {/* ✅ Avatar */}
+        {avatarUrl && (
+          <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+            <img
+              src={avatarUrl}
+              alt="Canvas Profile"
+              style={{
+                width: "100px",
+                height: "100px",
+                borderRadius: "50%",
+                border: "2px solid #1F0741",
+              }}
+            />
+          </div>
+        )}
+
         <p><strong>Email:</strong> {email}</p>
 
         {!editing ? (
           <>
             <p><strong>Canvas Token:</strong> ••••••••••••••••</p>
             <p><strong>Domain:</strong> {domain}</p>
-            <button onClick={() => setEditing(true)} style={{ marginRight: "1rem" }}>✏️ Edit</button>
+            <button onClick={() => setEditing(true)} style={{ marginRight: "1rem" }}>
+              ✏️ Edit
+            </button>
             <button onClick={handleClear}>❌ Clear</button>
           </>
         ) : (

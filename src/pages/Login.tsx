@@ -4,8 +4,10 @@ import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 
 // Bring in the illustration and logo
-import loginIllustration from "../assets/images/welcome_back.png";
+// import loginIllustration from "../assets/images/welcome_back.png";
 import academixLogo from "../assets/images/academix_logo.svg";
+import backgroundPattern from "../assets/images/background_pattern.png";
+
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -32,7 +34,9 @@ function Login() {
   return (
     <div
       style={{
-        backgroundColor: "#1F0741",
+        backgroundImage: `url(${backgroundPattern})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
         position: "fixed",
         top: 0,
         left: 0,
@@ -60,8 +64,8 @@ function Login() {
           padding: "0 2rem", // equal spacing on both sides even on smaller screens
         }}
       >
-{/* Left side: illustration */}
-<div
+        {/* Left side: illustration */}
+        {/* <div
   style={{
     flex: "0 1 480px",
     display: "flex",
@@ -77,7 +81,7 @@ function Login() {
       width: "auto",
     }}
   />
-</div>
+</div> */}
 
 
 

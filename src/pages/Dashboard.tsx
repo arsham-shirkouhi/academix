@@ -357,6 +357,8 @@ function Dashboard() {
     paddingBottom: "25px",
     scrollbarWidth: "none",
     msOverflowStyle: "none",
+    maxWidth: "calc(100vw - 250px)", // 🔥 ADD THIS LINE
+
   }}
 >
 
@@ -365,6 +367,8 @@ function Dashboard() {
           style={{
             columnCount: 3,
             columnGap: "12px",
+            maxWidth: "calc(100vw - 250px)", // 👈 This limits width
+
           }}
         >
           {/* This Week */}
