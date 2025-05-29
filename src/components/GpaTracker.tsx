@@ -5,11 +5,14 @@ import { auth } from "../firebase";
 interface GradeEntry {
   course: string;
   score: number;
+  hidden?: boolean;
+  isEditing?: boolean;
 }
 
 function GpaTracker() {
   const [grades, setGrades] = useState<GradeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingValue, setEditingValue] = useState<string>("");
 
   const percentageToGpa = (score: number): number => {
     if (score >= 93) return 4.0;
@@ -23,6 +26,54 @@ function GpaTracker() {
     if (score >= 67) return 1.3;
     if (score >= 60) return 1.0;
     return 0.0;
+  };
+
+  const toggleHideGrade = (index: number) => {
+    setGrades(prevGrades =>
+      prevGrades.map((grade, i) =>
+        i === index ? { ...grade, hidden: !grade.hidden } : grade
+      )
+    );
+  };
+
+  const startEditing = (index: number) => {
+    setGrades(prevGrades =>
+      prevGrades.map((grade, i) =>
+        i === index ? { ...grade, isEditing: true } : { ...grade, isEditing: false }
+      )
+    );
+    setEditingValue(grades[index].score.toFixed(1));
+  };
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === "" || (/^\d{1,3}(\.\d{0,1})?$/.test(value) && parseFloat(value) <= 100)) {
+      setEditingValue(value);
+    }
+  };
+
+  const finishEditing = (index: number) => {
+    setGrades(prevGrades =>
+      prevGrades.map((grade, i) => {
+        if (i === index) {
+          const newScore = Math.min(100, Math.max(0, parseFloat(editingValue) || 0));
+          return { ...grade, score: newScore, isEditing: false };
+        }
+        return grade;
+      })
+    );
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === "Enter") {
+      finishEditing(index);
+    } else if (e.key === "Escape") {
+      setGrades(prevGrades =>
+        prevGrades.map((grade, i) =>
+          i === index ? { ...grade, isEditing: false } : grade
+        )
+      );
+    }
   };
 
   useEffect(() => {
@@ -56,7 +107,7 @@ function GpaTracker() {
         const uniqueCourses = new Map<string, GradeEntry>();
         for (const entry of data) {
           if (!uniqueCourses.has(entry.course) || uniqueCourses.get(entry.course)!.score < entry.score) {
-            uniqueCourses.set(entry.course, entry);
+            uniqueCourses.set(entry.course, { ...entry, hidden: false, isEditing: false });
           }
         }
 
@@ -72,32 +123,95 @@ function GpaTracker() {
     fetchGrades();
   }, []);
 
-  const projectedGpa = grades.length
+  const visibleGrades = grades.filter(g => !g.hidden);
+  const projectedGpa = visibleGrades.length
     ? (
-        grades.map((g) => percentageToGpa(g.score)).reduce((a, b) => a + b, 0) /
-        grades.length
-      ).toFixed(2)
+      visibleGrades.map((g) => percentageToGpa(g.score)).reduce((a, b) => a + b, 0) /
+      visibleGrades.length
+    ).toFixed(2)
     : null;
 
   return (
-    <div style={{ backgroundColor: "", padding: "0rem"}}>
-
+    <div style={{ backgroundColor: "", padding: "5px" }}>
       {loading ? (
-        <p>Loading grades...</p>
+        <p style={{ margin: 0, fontSize: "14px" }}>Loading grades...</p>
       ) : grades.length === 0 ? (
-        <p>No grades found.</p>
+        <p style={{ margin: 0, fontSize: "14px" }}>No grades found.</p>
       ) : (
         <>
-          <ul style={{ listStyle: "none", padding: 0 }}>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {grades.map((g, i) => (
-              <li key={i} style={{ marginBottom: "6px", fontSize: "1rem" }}>
-                <strong>{g.course}</strong>: {g.score.toFixed(1)}%
+              <li
+                key={i}
+                style={{
+                  marginBottom: i === grades.length - 1 ? "0" : "4px",
+                  fontSize: "14px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  opacity: g.hidden ? 0.5 : 1,
+                  transition: "opacity 0.2s ease"
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong>{g.course}</strong>:
+                  {g.isEditing ? (
+                    <input
+                      type="text"
+                      value={editingValue}
+                      onChange={handleEditChange}
+                      onBlur={() => finishEditing(i)}
+                      onKeyDown={(e) => handleKeyPress(e, i)}
+                      style={{
+                        width: "60px",
+                        padding: "2px 4px",
+                        fontSize: "14px",
+                        border: "1px solid #1F0741",
+                        borderRadius: "4px",
+                        backgroundColor: "rgb(255, 251, 241)"
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      onClick={() => startEditing(i)}
+                      style={{ cursor: "pointer", padding: "2px 4px" }}
+                    >
+                      {g.score.toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => toggleHideGrade(i)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "4px 8px",
+                    fontSize: "12px",
+                    color: g.hidden ? "#666" : "#1F0741",
+                    transition: "color 0.2s ease"
+                  }}
+                >
+                  {g.hidden ? "Show" : "Hide"}
+                </button>
               </li>
             ))}
           </ul>
           <hr style={{ margin: "0.5rem 0", border: "1px solid #1F0741" }} />
-          <p style={{ fontWeight: "bold", fontSize: "16px", color: "#1F0741" }}>
-            Projected GPA: <span style={{ fontWeight: "900" }}>{projectedGpa}</span>
+          <p style={{
+            fontWeight: "bold",
+            fontSize: "14px",
+            color: "#1F0741",
+            margin: 0,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <span>Projected GPA: <span style={{ fontWeight: "900" }}>{projectedGpa}</span></span>
+            <span style={{ fontSize: "12px", opacity: 0.7 }}>
+              {visibleGrades.length}/{grades.length} courses
+            </span>
           </p>
         </>
       )}

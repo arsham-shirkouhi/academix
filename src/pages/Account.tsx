@@ -137,10 +137,21 @@ function Account({ setEvents, setCalendarEvents }: any) {
                 style={{
                   padding: "0.5rem 1.25rem",
                   backgroundColor: "#FFC02E",
-                  border: "none",
-                  borderRadius: "6px",
+                  border: "3px solid #1F0741",
+                  borderRadius: "10px",
                   fontWeight: "bold",
                   cursor: "pointer",
+                  boxShadow: "0 3px #1F0741",
+                  transition: "all 0.2s ease",
+                  transform: "translateY(0)"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(2px)";
+                  e.currentTarget.style.boxShadow = "0 0 #1F0741";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 3px #1F0741";
                 }}
               >
                 Save Connection
@@ -156,10 +167,21 @@ function Account({ setEvents, setCalendarEvents }: any) {
             padding: "0.5rem 1.25rem",
             backgroundColor: "#FF5C5C",
             color: "#fff",
-            border: "none",
-            borderRadius: "6px",
+            border: "3px solid #1F0741",
+            borderRadius: "10px",
             fontWeight: "bold",
             cursor: "pointer",
+            boxShadow: "0 3px #1F0741",
+            transition: "all 0.2s ease",
+            transform: "translateY(0)"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(2px)";
+            e.currentTarget.style.boxShadow = "0 0 #1F0741";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 3px #1F0741";
           }}
         >
           Log Out

@@ -18,12 +18,13 @@ import RestartIcon from "../assets/images/icons/restart.svg?react";
 import StreakIcon from "../assets/images/icons/streak.svg?react";
 
 function Dashboard() {
-  const [time, setTime] = useState(1 * 60);
-  const [initialTime, setInitialTime] = useState(1 * 60);
+  const [time, setTime] = useState(90 * 60); // 90 minutes in seconds
+  const [initialTime, setInitialTime] = useState(90 * 60);
   const [rotateRestart, setRotateRestart] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [hours, setHours] = useState("00");
-  const [minutes, setMinutes] = useState("00");
+  const [hours, setHours] = useState("01");
+  const [minutes, setMinutes] = useState("30");
   const [seconds, setSeconds] = useState("00");
 
   const progressWidth = initialTime > 0 ? (time / initialTime) * 100 : 0;
@@ -70,27 +71,49 @@ function Dashboard() {
       if (snap.exists()) {
         const data = snap.data();
         const lastUsedDate = data.lastUsedDate;
-        const storedStreak = data.studyStreak || 1;
+        const storedStreak = data.studyStreak || 0;
 
-        if (lastUsedDate !== today) {
+        // Convert dates for comparison
+        const lastLoginDate = new Date(lastUsedDate);
+        const currentDate = new Date();
+        const timeDifference = currentDate.getTime() - lastLoginDate.getTime();
+        const hoursDifference = timeDifference / (1000 * 60 * 60);
+
+        // If more than 24 hours have passed, reset streak to 0
+        if (hoursDifference > 24) {
           await setDoc(
             docRef,
             {
               lastUsedDate: today,
-              studyStreak: storedStreak + 1,
+              studyStreak: 0
+            },
+            { merge: true }
+          );
+          setStreak(0);
+        }
+        // If it's a new day but within 24 hours, increment streak
+        else if (lastUsedDate !== today) {
+          await setDoc(
+            docRef,
+            {
+              lastUsedDate: today,
+              studyStreak: storedStreak + 1
             },
             { merge: true }
           );
           setStreak(storedStreak + 1);
-        } else {
+        }
+        // If same day, keep current streak
+        else {
           setStreak(storedStreak);
         }
       } else {
+        // First time user starts with streak of 0
         await setDoc(docRef, {
           lastUsedDate: today,
-          studyStreak: 1,
+          studyStreak: 0
         });
-        setStreak(1);
+        setStreak(0);
       }
     };
 
@@ -108,6 +131,14 @@ function Dashboard() {
       if (interval) clearInterval(interval);
     };
   }, [isRunning, time]);
+
+  useEffect(() => {
+    // Simulate loading time
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const formatTime = (sec: number) => {
     const h = Math.floor(sec / 3600);
@@ -341,43 +372,48 @@ function Dashboard() {
         </div>
       </div>
       <style>
-  {`
-    .no-scrollbar::-webkit-scrollbar {
-      display: none; /* Chrome, Safari, Opera */
-    }
-  `}
-</style>
+        {`
+          .no-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}
+      </style>
 
       {/* SCROLLABLE MAIN GRID */}
       <div
-  className="no-scrollbar"
-  style={{
-    flexGrow: 1,
-    overflowY: "auto",
-    paddingBottom: "25px",
-    scrollbarWidth: "none",
-    msOverflowStyle: "none",
-    maxWidth: "calc(100vw - 250px)", // 🔥 ADD THIS LINE
-
-  }}
->
-
-
+        className="no-scrollbar"
+        style={{
+          flexGrow: 1,
+          overflowY: "auto",
+          paddingBottom: "25px",
+          maxWidth: "calc(100vw - 250px)",
+        }}
+      >
         <div
           style={{
-            columnCount: 3,
-            columnGap: "12px",
-            maxWidth: "calc(100vw - 250px)", // 👈 This limits width
-
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "12px",
+            maxWidth: "calc(100vw - 250px)",
+            height: "100%"
           }}
         >
-          {/* This Week */}
-          <div style={{ breakInside: "avoid", marginBottom: "12px" }}>
+          {/* First Row: Schedule, Upcoming, Todo */}
+          {/* Schedule */}
+          <div style={{ gridColumn: "span 1", height: "100%" }}>
             <div
               style={{
                 border: "3px solid #1F0741",
                 borderRadius: "16px",
                 overflow: "hidden",
+                backgroundColor: "#FFFBF1",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column"
               }}
             >
               <div
@@ -389,52 +425,32 @@ function Dashboard() {
                   fontWeight: "bold",
                 }}
               >
-                This Week
+                Schedule
               </div>
               <div
-                style={{ backgroundColor: "#FFFBF1", padding: "1rem" }}
+                className="no-scrollbar"
+                style={{
+                  padding: "15px",
+                  flex: 1,
+                  overflowY: "auto"
+                }}
               >
-                <p>🕒 Study Time: <strong>2h 30m</strong></p>
-                <p>✅ Assignments: <strong>2 done</strong></p>
-                <p>📋 Tasks Done: <strong>3/5</strong></p>
+                <WeeklyCalendar limitToTodayAndTomorrow />
               </div>
             </div>
-          </div>
-
-          {/* Weekly Calendar */}
-          <div
-            style={{
-              border: "3px solid #1F0741",
-              borderRadius: "16px",
-              overflow: "hidden",
-              backgroundColor: "#FFFBF1",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "start",
-              alignItems: "stretch",
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: "#1F0741",
-                color: "#FFFBF1",
-                padding: "0.75rem 1rem",
-                fontSize: "24px",
-                fontWeight: "bold",
-              }}
-            >
-              Schedule
-            </div>
-            <WeeklyCalendar limitToTodayAndTomorrow />
           </div>
 
           {/* Upcoming */}
-          <div style={{ breakInside: "avoid", marginBottom: "12px" }}>
+          <div style={{ gridColumn: "span 1", height: "100%" }}>
             <div
               style={{
                 border: "3px solid #1F0741",
                 borderRadius: "16px",
                 overflow: "hidden",
+                backgroundColor: "#FFFBF1",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column"
               }}
             >
               <div
@@ -448,19 +464,31 @@ function Dashboard() {
               >
                 Upcoming
               </div>
-              <div style={{ backgroundColor: "#FFFBF1" }}>
+              <div
+                className="no-scrollbar"
+                style={{
+                  backgroundColor: "#FFFBF1",
+                  padding: "15px",
+                  flex: 1,
+                  overflowY: "auto"
+                }}
+              >
                 <UpcomingEvents />
               </div>
             </div>
           </div>
 
-          {/* To-Do */}
-          <div style={{ breakInside: "avoid", marginBottom: "12px" }}>
+          {/* Todo */}
+          <div style={{ gridColumn: "span 1", height: "100%" }}>
             <div
               style={{
                 border: "3px solid #1F0741",
                 borderRadius: "16px",
                 overflow: "hidden",
+                backgroundColor: "#FFFBF1",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column"
               }}
             >
               <div
@@ -475,21 +503,109 @@ function Dashboard() {
                 To-Do
               </div>
               <div
-                style={{ backgroundColor: "#FFFBF1", padding: "15px" }}
+                className="no-scrollbar"
+                style={{
+                  backgroundColor: "#FFFBF1",
+                  padding: "15px",
+                  flex: 1,
+                  overflowY: "auto"
+                }}
               >
-                <TodoList />
+                <div style={{ flex: 1 }}>
+                  {loading ? (
+                    <div>
+                      {[1, 2, 3].map((_, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            padding: "8px 0",
+                            opacity: 0,
+                            animation: `fadeInUp 0.5s ease forwards ${index * 0.1}s`
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "18px",
+                              height: "18px",
+                              borderRadius: "6px",
+                              background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                              backgroundSize: "200% 100%",
+                              animation: "shimmer 2s infinite"
+                            }}
+                          />
+                          <div
+                            style={{
+                              flex: 1,
+                              height: "18px",
+                              borderRadius: "4px",
+                              background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                              backgroundSize: "200% 100%",
+                              animation: "shimmer 2s infinite"
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <TodoList />
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* GPA Tracker */}
-          <div style={{ breakInside: "avoid", marginBottom: "12px" }}>
+          {/* Second Row: This Week and Grade Overview */}
+          {/* This Week - Temporarily commented out
+          <div style={{ gridColumn: "span 2", height: "auto" }}>
             <div
               style={{
                 border: "3px solid #1F0741",
                 borderRadius: "16px",
                 overflow: "hidden",
                 backgroundColor: "#FFFBF1",
+                height: "100%"
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "#1F0741",
+                  color: "#FFFBF1",
+                  padding: "0.75rem 1rem",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                }}
+              >
+                This Week
+              </div>
+              <div
+                className="no-scrollbar"
+                style={{
+                  backgroundColor: "#FFFBF1",
+                  padding: "15px",
+                }}
+              >
+                <p style={{ margin: "0.25rem 0", lineHeight: "1.5", fontSize: "14px" }}>🕒 Study Time: <strong>2h 30m</strong></p>
+                <p style={{ margin: "0.25rem 0", lineHeight: "1.5", fontSize: "14px" }}>✅ Assignments: <strong>2 done</strong></p>
+                <p style={{ margin: "0.25rem 0", lineHeight: "1.5", fontSize: "14px" }}>📋 Tasks Done: <strong>3/5</strong></p>
+              </div>
+            </div>
+          </div>
+          */}
+
+          {/* Grade Overview */}
+          <div style={{ gridColumn: "span 1", height: "100%" }}>
+            <div
+              style={{
+                border: "3px solid #1F0741",
+                borderRadius: "16px",
+                overflow: "hidden",
+                backgroundColor: "#FFFBF1",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column"
               }}
             >
               <div
@@ -503,7 +619,14 @@ function Dashboard() {
               >
                 Grade Overview
               </div>
-              <div style={{ padding: "1rem" }}>
+              <div
+                className="no-scrollbar"
+                style={{
+                  padding: "15px",
+                  flex: 1,
+                  overflowY: "auto"
+                }}
+              >
                 <GpaTracker />
               </div>
             </div>
@@ -527,13 +650,43 @@ function Dashboard() {
             alignItems: "center",
             zIndex: 9999,
             flexDirection: "column",
+            cursor: "pointer",
           }}
           onClick={() => setShowFullscreenTimer(false)}
         >
-          <span style={{ fontSize: "6rem", fontWeight: "bold" }}>
+          {/* Progress Bar */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              height: "100%",
+              backgroundColor: "#FFB800",
+              transition: "width 1s linear",
+              width: `${progressWidth}%`,
+              zIndex: -1,
+            }}
+          />
+          <span
+            style={{
+              fontSize: "8rem",
+              fontWeight: "bold",
+              position: "relative",
+              zIndex: 1,
+              color: "#FFFBF1",
+            }}
+          >
             {formatTime(time).replace(" left", "")}
           </span>
-          <p style={{ marginTop: "1rem", fontSize: "1.5rem" }}>
+          <p
+            style={{
+              marginTop: "1rem",
+              fontSize: "1.5rem",
+              position: "relative",
+              zIndex: 1,
+              color: "#FFFBF1",
+            }}
+          >
             Click anywhere to exit
           </p>
         </div>

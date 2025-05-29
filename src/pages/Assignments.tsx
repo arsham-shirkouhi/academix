@@ -111,7 +111,7 @@ function Assignments() {
 
         `}
 
-        
+
       </style>
 
       {/* Modal for color customization */}
@@ -151,10 +151,21 @@ function Assignments() {
                 marginTop: "12px",
                 backgroundColor: "#ffb703",
                 padding: "8px 14px",
-                borderRadius: "6px",
+                borderRadius: "10px",
                 border: "3px solid #1F0741",
                 fontWeight: "bold",
-                cursor: "pointer"
+                cursor: "pointer",
+                boxShadow: "0 3px #1F0741",
+                transition: "all 0.2s ease",
+                transform: "translateY(0)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(2px)";
+                e.currentTarget.style.boxShadow = "0 0 #1F0741";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 3px #1F0741";
               }}
             >
               Close
@@ -167,24 +178,34 @@ function Assignments() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <h2 style={{ fontSize: "42px", fontWeight: "900", color: "#1f0741" }}>All Upcoming Assignments!</h2>
         <button
-  onClick={() => setShowModal(true)}
-  style={{
-    backgroundColor: "#ffb703",
-    padding: "10px",
-    borderRadius: "6px",
-    border: "3px solid #1F0741",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "48px",
-    width: "48px"
-  }}
-  title="Customize Colors"
->
-  <ColorIcon style={{ width: "25px", height: "25px" }} />
-</button>
-
+          onClick={() => setShowModal(true)}
+          style={{
+            backgroundColor: "#ffb703",
+            padding: "10px",
+            borderRadius: "10px",
+            border: "3px solid #1F0741",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "48px",
+            width: "48px",
+            boxShadow: "0 3px #1F0741",
+            transition: "all 0.2s ease",
+            transform: "translateY(0)"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(2px)";
+            e.currentTarget.style.boxShadow = "0 0 #1F0741";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 3px #1F0741";
+          }}
+          title="Customize Colors"
+        >
+          <ColorIcon style={{ width: "25px", height: "25px" }} />
+        </button>
       </div>
 
       {/* Scrollable Assignments View */}
@@ -217,31 +238,31 @@ function Assignments() {
         ) : events.length === 0 ? (
           <p>No upcoming assignments found.</p>
         ) : (
-<div style={{ display: "flex", flexDirection: "column", gap:"15px"}}>
-{events.map((event, index) => {
+          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            {events.map((event, index) => {
               const days = daysLeft(event.due_at);
               const urgencyColor = getUrgencyColor(days);
               const courseColor = colorPreferences[event.courseName] || "#1f0741";
 
               return (
-<div
-  key={event.id}
-  className="assignment-card"
-  style={{
-    border: `3px solid #1f0741`,
-    borderRadius: "10px",
-    padding: "15px 15px 15px 30px",
-    background: "#FFFBF1",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    position: "relative",
-    animation: "fadeInUp 0.5s ease forwards",
-    animationDelay: `${index * 0.05}s`,
-    opacity: 0,
-    marginBottom: index === events.length - 1 ? "15px" : "0px"
-  }}
->
+                <div
+                  key={event.id}
+                  className="assignment-card"
+                  style={{
+                    border: `3px solid #1f0741`,
+                    borderRadius: "10px",
+                    padding: "15px 15px 15px 30px",
+                    background: "#FFFBF1",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    position: "relative",
+                    animation: "fadeInUp 0.5s ease forwards",
+                    animationDelay: `${index * 0.05}s`,
+                    opacity: 0,
+                    marginBottom: index === events.length - 1 ? "15px" : "0px"
+                  }}
+                >
 
                   <div style={{
                     position: "absolute",

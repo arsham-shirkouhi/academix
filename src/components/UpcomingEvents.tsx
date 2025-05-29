@@ -16,6 +16,45 @@ function UpcomingEvents() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Skeleton loading component
+  const LoadingSkeleton = () => {
+    return Array(4).fill(null).map((_, index) => (
+      <div
+        key={index}
+        style={{
+          padding: "12px",
+          borderBottom: "2px solid #f0f0f0",
+          opacity: 0.7,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {/* Title skeleton */}
+          <div
+            style={{
+              height: "20px",
+              background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+              backgroundSize: "200% 100%",
+              animation: "shimmer 2s infinite",
+              borderRadius: "4px",
+              width: "80%"
+            }}
+          />
+          {/* Date skeleton */}
+          <div
+            style={{
+              height: "16px",
+              background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+              backgroundSize: "200% 100%",
+              animation: "shimmer 2s infinite",
+              borderRadius: "4px",
+              width: "40%"
+            }}
+          />
+        </div>
+      </div>
+    ));
+  };
+
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
@@ -92,118 +131,135 @@ function UpcomingEvents() {
             0% { opacity: 0; transform: translateY(10px); }
             100% { opacity: 1; transform: translateY(0); }
           }
+
+          @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
         `}
       </style>
 
       <div
         style={{
           backgroundColor: "#FFFBF1",
-          borderRadius: "0 0 16px 16px",
-          height: "320px", // Keep same height
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden", // Prevent content overflow
+          height: "300px",
+          position: "relative"
         }}
       >
-        {/* Scrollable area */}
         <div
           className="no-scrollbar"
           style={{
-            flex: 1,
+            height: "calc(100% - 55px)",
             overflowY: "auto",
-            padding: "16px",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
           }}
         >
           {loading ? (
-            <p>Loading assignments...</p>
+            <LoadingSkeleton />
           ) : assignments.length === 0 ? (
-            <p style={{ color: "#666", marginBottom: "1rem", textAlign: "center" }}>
+            <p style={{ color: "#666", textAlign: "center", margin: 0, fontSize: "14px" }}>
               No upcoming assignments this week.
             </p>
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-{assignments.map((assignment, index) => (
-  <li
-    key={assignment.id}
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: index === assignments.length - 1 ? "0" : "0.75rem",
-      opacity: 0,
-      animation: "fadeInUp 0.5s ease forwards",
-      animationDelay: `${index * 0.05}s`,
-    }}
-  >
-    <div style={{ display: "flex", alignItems: "center", flex: 1 }}>
-      <span
-        style={{
-          width: "17.5px",
-          height: "17.5px",
-          minWidth: "17.5px",
-          minHeight: "17.5px",
-          display: "inline-block",
-          borderRadius: "5px",
-          backgroundColor: getUrgencyColor(assignment.daysLeft),
-          marginRight: "0.6rem",
-          border: "2px solid #000",
-          flexShrink: 0,
-        }}
-      />
-      <span
-        style={{
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          maxWidth: "200px",
-        }}
-      >
-        {assignment.title}
-      </span>
-    </div>
-    <span
-      style={{
-        fontSize: "16px",
-        fontWeight: 600,
-        color: "#1F0741",
-      }}
-    >
-      in {assignment.daysLeft} day
-      {assignment.daysLeft !== 1 ? "s" : ""}
-    </span>
-  </li>
-))}
-
+              {assignments.map((assignment, index) => (
+                <li
+                  key={assignment.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: index === assignments.length - 1 ? "0" : "0.5rem",
+                    padding: "4px 0",
+                    opacity: 0,
+                    animation: "fadeInUp 0.5s ease forwards",
+                    animationDelay: `${index * 0.05}s`,
+                    cursor: "pointer"
+                  }}
+                  onClick={() => navigate("/assignments")}
+                >
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        minWidth: "18px",
+                        minHeight: "18px",
+                        display: "inline-block",
+                        borderRadius: "6px",
+                        backgroundColor: getUrgencyColor(assignment.daysLeft),
+                        marginRight: "0.5rem",
+                        border: "2px solid #000",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span
+                      style={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        maxWidth: "200px",
+                        fontSize: "16px"
+                      }}
+                    >
+                      {assignment.title}
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      color: "#1F0741",
+                      marginLeft: "8px"
+                    }}
+                  >
+                    in {assignment.daysLeft} day
+                    {assignment.daysLeft !== 1 ? "s" : ""}
+                  </span>
+                </li>
+              ))}
             </ul>
           )}
         </div>
-
-        {/* Fixed Button at bottom */}
-        <div
-          style={{
-            padding: "15px 15px 15px 15px", 
+        {!loading && (
+          <div style={{
+            position: "absolute",
+            bottom: "5px",
+            left: "5px",
+            right: "5px",
             backgroundColor: "#FFFBF1",
-          }}
-        >
-
-          <button
-            onClick={() => navigate("/assignments")}
-            style={{
-              width: "100%",
-              height: "45px",
-              backgroundColor: "#ffb703",
-              border: "3px solid #000",
-              borderRadius: "6px",
-              fontWeight: "bold",
-              fontSize: "18px",
-              cursor: "pointer",
-            }}
-          >
-            View Assignments
-          </button>
-        </div>
+          }}>
+            <button
+              onClick={() => navigate("/assignments")}
+              style={{
+                width: "100%",
+                height: "35px",
+                backgroundColor: "#ffb703",
+                border: "3px solid #1F0741",
+                borderRadius: "10px",
+                fontWeight: "bold",
+                fontSize: "14px",
+                cursor: "pointer",
+                boxShadow: "0 3px #1F0741",
+                transition: "all 0.2s ease",
+                transform: "translateY(0)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(2px)";
+                e.currentTarget.style.boxShadow = "0 0 #1F0741";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 3px #1F0741";
+              }}
+            >
+              View Assignments
+            </button>
+          </div>
+        )}
       </div>
     </>
   );

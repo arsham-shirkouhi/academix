@@ -97,10 +97,10 @@ function TodoList() {
     <div
       style={{
         backgroundColor: "#FFFBF1",
-        borderRadius: "0 0 16px 16px",
-        height:"300px",
         display: "flex",
         flexDirection: "column",
+        height: "300px", // Fixed height
+        position: "relative"
       }}
     >
       <style>
@@ -140,17 +140,15 @@ function TodoList() {
       <div
         className="no-scrollbar"
         style={{
-          flexGrow: 1,
+          height: "calc(100% - 55px)", // Adjusted for smaller spacing
           overflowY: "auto",
-          paddingRight: "8px",
-          paddingLeft: "0",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
           position: "relative",
         }}
       >
         {loading ? (
-          <div>Loading tasks...</div>
+          <div style={{ margin: 0, fontSize: "14px" }}>Loading tasks...</div>
         ) : todos.filter((todo) => !todo.completed).length > 0 ? (
           todos.map((todo, index) => (
             <div
@@ -225,23 +223,40 @@ function TodoList() {
           </div>
         )}
       </div>
-
-      <button
-        onClick={() => navigate("/todo")}
-        style={{
-          width: "100%",
-          height: "45px",
-          backgroundColor: "#ffb703",
-          border: "3px solid #000",
-          borderRadius: "6px",
-          fontWeight: "bold",
-          fontSize: "18px",
-          cursor: "pointer",
-          marginTop: "0.5rem",
-        }}
-      >
-        View To-do's
-      </button>
+      <div style={{
+        position: "absolute",
+        bottom: "5px",
+        left: "5px",
+        right: "5px",
+        backgroundColor: "#FFFBF1",
+      }}>
+        <button
+          onClick={() => navigate("/todo")}
+          style={{
+            width: "100%",
+            height: "35px",
+            backgroundColor: "#ffb703",
+            border: "3px solid #1F0741",
+            borderRadius: "10px",
+            fontWeight: "bold",
+            fontSize: "14px",
+            cursor: "pointer",
+            boxShadow: "0 3px #1F0741",
+            transition: "all 0.2s ease",
+            transform: "translateY(0)"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(2px)";
+            e.currentTarget.style.boxShadow = "0 0 #1F0741";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 3px #1F0741";
+          }}
+        >
+          View To-do's
+        </button>
+      </div>
     </div>
   );
 }

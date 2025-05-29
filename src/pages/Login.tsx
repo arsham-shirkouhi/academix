@@ -172,11 +172,22 @@ function Login() {
                 width: "100%",
                 padding: "0.75rem",
                 backgroundColor: "#FFC02E",
-                border: "2px solid #1F0741",
+                border: "3px solid #1F0741",
                 borderRadius: "10px",
                 fontWeight: "bold",
                 fontSize: "1rem",
                 cursor: "pointer",
+                boxShadow: "0 3px #1F0741",
+                transition: "all 0.2s ease",
+                transform: "translateY(0)"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(2px)";
+                e.currentTarget.style.boxShadow = "0 0 #1F0741";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 3px #1F0741";
               }}
             >
               Login
@@ -195,7 +206,7 @@ function Login() {
               textAlign: "center",
             }}
           >
-            Don’t have an account?
+            Don't have an account?
             <button
               onClick={() => navigate("/signup")}
               style={{

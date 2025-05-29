@@ -2,26 +2,59 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { fetchUpcomingEvents } from "../utils/canvasApi";
-import { useNavigate } from "react-router-dom"; // 👈 ADD THIS
+import { useNavigate } from "react-router-dom";
 
 function DashboardHeader() {
   const [userName, setUserName] = useState("");
   const [assignmentsDueTomorrow, setAssignmentsDueTomorrow] = useState(0);
   const [currentWeek, setCurrentWeek] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingText, setLoadingText] = useState("Student");
+  const placeholderLength = 7; // Length of placeholder text while loading
 
   const totalWeeks = 15;
-  const navigate = useNavigate(); // 👈 ADD THIS
+  const navigate = useNavigate();
+
+  // Function to get a random letter
+  const getRandomLetter = () => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    return letters.charAt(Math.floor(Math.random() * letters.length));
+  };
+
+  // Loading animation effect
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (isLoading) {
+      intervalId = setInterval(() => {
+        const shuffledText = Array(placeholderLength)
+          .fill('')
+          .map(() => getRandomLetter())
+          .join('');
+        setLoadingText(shuffledText);
+      }, 50); // Faster interval for more dynamic effect
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isLoading]);
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
 
       const docRef = doc(db, "users", user.uid);
       const snap = await getDoc(docRef);
 
       if (!snap.exists()) {
         console.warn("⚠️ No user data found.");
+        setIsLoading(false);
         return;
       }
 
@@ -29,6 +62,7 @@ function DashboardHeader() {
 
       if (!token || !domain) {
         console.warn("⚠️ Missing token or domain.");
+        setIsLoading(false);
         return;
       }
 
@@ -90,6 +124,8 @@ function DashboardHeader() {
           setCurrentWeek(week > 0 ? week : 0);
         }
       }
+
+      setIsLoading(false);
     };
 
     fetchData();
@@ -114,23 +150,29 @@ function DashboardHeader() {
             color: "#21003b",
           }}
         >
-          Welcome back, {userName || "Student"}!
+          Welcome back, {isLoading ? loadingText : (userName || "Student")}!
         </h2>
         <p style={{ margin: 0, fontSize: "24px", color: "#21003b" }}>
-          You have <strong>{assignmentsDueTomorrow}</strong> assignment
-          {assignmentsDueTomorrow !== 1 && "s"} due tomorrow
-          <span
-            onClick={() => navigate("/assignments")} // 👈 CLICK GOES TO ASSIGNMENTS
-            style={{
-              marginLeft: "0.25rem",
-              fontWeight: "bold",
-              cursor: "pointer",
-              textDecoration: "none",
-            }}
-          >
-            {" "}
-            view ➜
-          </span>
+          {assignmentsDueTomorrow === 0 ? (
+            "Yay! Take a breather, you don't have anything due!"
+          ) : (
+            <>
+              You have <strong>{assignmentsDueTomorrow}</strong> assignment
+              {assignmentsDueTomorrow !== 1 && "s"} due tomorrow
+              <span
+                onClick={() => navigate("/assignments")}
+                style={{
+                  marginLeft: "0.25rem",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  textDecoration: "none",
+                }}
+              >
+                {" "}
+                view ➜
+              </span>
+            </>
+          )}
         </p>
       </div>
       <div style={{ textAlign: "right", color: "#21003b" }}>
