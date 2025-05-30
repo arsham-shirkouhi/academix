@@ -148,6 +148,9 @@ function Todo() {
   const handleAdvancedAdd = async () => {
     if (!advancedTodo.text.trim()) return;
 
+    // Filter out empty subtasks
+    const filteredSubtasks = advancedTodo.subtasks.filter(st => st.text.trim() !== "");
+
     const newItem: TodoItem = {
       id: generateId(),
       text: advancedTodo.text,
@@ -158,7 +161,7 @@ function Todo() {
       subject: advancedTodo.subject,
       suggested: false,
       dueDate: advancedTodo.dueDate || undefined,
-      subtasks: advancedTodo.subtasks.length > 0 ? advancedTodo.subtasks : undefined,
+      subtasks: filteredSubtasks.length > 0 ? filteredSubtasks : undefined,
     };
 
     const updated = {
@@ -348,6 +351,7 @@ function Todo() {
             cursor: 'default'
           }
         }}
+        className={activeDragId === todo.id ? "dragging" : ""}
         style={{
           display: "flex",
           background: "#FFFBF1",
@@ -356,9 +360,11 @@ function Todo() {
           overflow: "hidden",
           marginBottom: "12px",
           transform: isOverTrash && activeDragId === todo.id
-            ? "scale(0.95) rotate(-5deg)"
+            ? "scale(0) rotate(-10deg)"
             : provided.draggableProps.style?.transform || "none",
-          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: isOverTrash && activeDragId === todo.id
+            ? "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+            : "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
           position: "relative",
           ...provided.draggableProps.style
         }}
@@ -397,12 +403,15 @@ function Todo() {
                   display: "inline-block",
                   position: "relative",
                   transition: "color 0.2s ease",
+                  textDecoration: "none",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = "#2f1161";
+                  e.currentTarget.style.textDecoration = "underline";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.color = "#1F0741";
+                  e.currentTarget.style.textDecoration = "none";
                 }}
               >
                 {todo.text}
@@ -702,9 +711,9 @@ function Todo() {
                 width: "100px"
               }}
             >
-              <option>High</option>
-              <option>Medium</option>
-              <option>Low</option>
+              <option style={{ color: "#D41B1B", fontWeight: "bold" }}>High</option>
+              <option style={{ color: "#FFB200", fontWeight: "bold" }}>Medium</option>
+              <option style={{ color: "#1DB815", fontWeight: "bold" }}>Low</option>
             </select>
             <select
               value={subject}
@@ -785,19 +794,24 @@ function Todo() {
                 style={{
                   width: 48,
                   height: 48,
-                  backgroundColor: snapshot.isDraggingOver ? "#d41b1b" : "#ffb703",
-                  border: "3px solid #1F0741",
+                  backgroundColor: snapshot.isDraggingOver ? "#d41b1b" : "#FFFBF1",
+                  border: snapshot.isDraggingOver ? "3px solid #1F0741" : "3px dashed #1F0741",
                   borderRadius: "10px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  transition: "0.2s ease",
-                  zIndex: 1000,
+                  transition: "all 0.2s ease",
+                  zIndex: 10,
                   overflow: "hidden",
                   flex: "0 0 auto"
                 }}
               >
-                <TrashIcon width={31} height={31} />
+                <div style={{
+                  animation: snapshot.isDraggingOver ? "rotate 1s ease-in-out infinite" : "none",
+                  transformOrigin: "center"
+                }}>
+                  <TrashIcon width={31} height={31} />
+                </div>
                 <div style={{ display: "none" }}>{provided.placeholder}</div>
               </div>
             )}
@@ -874,9 +888,9 @@ function Todo() {
                       flex: 1,
                     }}
                   >
-                    <option>High</option>
-                    <option>Medium</option>
-                    <option>Low</option>
+                    <option style={{ color: "#D41B1B", fontWeight: "bold" }}>High</option>
+                    <option style={{ color: "#FFB200", fontWeight: "bold" }}>Medium</option>
+                    <option style={{ color: "#1DB815", fontWeight: "bold" }}>Low</option>
                   </select>
 
                   <select
@@ -915,32 +929,28 @@ function Todo() {
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                     <h3 style={{ margin: 0, color: "#1F0741" }}>Subtasks</h3>
-                    <button
+                    <div
                       onClick={addSubtask}
                       style={{
-                        backgroundColor: "#ffb703",
-                        color: "#1F0741",
-                        padding: "5px 10px",
-                        borderRadius: "10px",
-                        fontWeight: "bold",
-                        border: "3px solid #1F0741",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        color: "#ffb703",
                         cursor: "pointer",
                         fontSize: "14px",
+                        fontWeight: "bold",
                         transition: "all 0.2s ease",
-                        transform: "translateY(0)",
-                        boxShadow: "0 4px 0 0 #1F0741"
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(2px)";
-                        e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
+                        e.currentTarget.style.opacity = "0.8";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = "0 4px 0 0 #1F0741";
+                        e.currentTarget.style.opacity = "1";
                       }}
                     >
+                      <span style={{ fontSize: "18px", lineHeight: 1 }}>+</span>
                       Add Subtask
-                    </button>
+                    </div>
                   </div>
 
                   {advancedTodo.subtasks.map((subtask, index) => (
@@ -961,28 +971,24 @@ function Todo() {
                       <button
                         onClick={() => removeSubtask(subtask.id)}
                         style={{
-                          backgroundColor: "#D41B1B",
-                          color: "#FFFFFF",
-                          padding: "5px 10px",
-                          borderRadius: "10px",
-                          fontWeight: "bold",
-                          border: "3px solid #1F0741",
+                          width: "28px",
+                          height: "32px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                           cursor: "pointer",
-                          fontSize: "14px",
-                          transition: "all 0.2s ease",
-                          transform: "translateY(0)",
-                          boxShadow: "0 4px 0 0 #1F0741"
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = "translateY(2px)";
-                          e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow = "0 4px 0 0 #1F0741";
+                          fontSize: "32px",
+                          color: "#1F0741",
+                          backgroundColor: "transparent",
+                          fontWeight: "normal",
+                          border: "none",
+                          padding: 0,
+                          transition: "opacity 0.2s ease",
+                          lineHeight: "1",
+                          marginTop: "1px"
                         }}
                       >
-                        Remove
+                        ×
                       </button>
                     </div>
                   ))}
@@ -1277,6 +1283,15 @@ function Todo() {
             to {
               transform: translateX(100%);
             }
+          }
+          @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+            100% { transform: rotate(0deg); }
+          }
+          .dragging {
+            z-index: 9999 !important;
           }
         `}
       </style>
