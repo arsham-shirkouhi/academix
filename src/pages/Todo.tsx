@@ -4,7 +4,7 @@ import { auth } from "../firebase";
 import { updateTodos, getTodos, getUserSettings } from "../utils/firestoreUser";
 import TrashIcon from "../assets/images/icons/trash.svg?react";
 
-type ToastType = "add" | "delete";
+type ToastType = "add" | "delete" | "error";
 type Toast = {
   message: string;
   type: ToastType;
@@ -14,7 +14,7 @@ type Toast = {
 
 const COLUMN_TYPES = ["get-started", "ongoing", "done"];
 
-type Priority = "High" | "Medium" | "Low";
+type Priority = "High" | "Medium" | "Low" | "";
 type TodoItem = {
   id: string;
   text: string;
@@ -35,8 +35,8 @@ function Todo() {
     "done": [],
   });
   const [newTodo, setNewTodo] = useState("");
-  const [priority, setPriority] = useState<Priority>("Medium");
-  const [subject, setSubject] = useState("General");
+  const [priority, setPriority] = useState<Priority | "">("");
+  const [subject, setSubject] = useState("");
   const [courses, setCourses] = useState<string[]>([]);
   const [isOverTrash, setIsOverTrash] = useState(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -72,6 +72,15 @@ function Todo() {
   const [expandedTodoId, setExpandedTodoId] = useState<string | null>(null);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
 
+  // Add new state for modal exit animation
+  const [isModalExiting, setIsModalExiting] = useState(false);
+
+  // Add state for tracking removing subtasks
+  const [removingSubtaskId, setRemovingSubtaskId] = useState<string | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+
   const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
   useEffect(() => {
@@ -79,6 +88,7 @@ function Todo() {
       const user = auth.currentUser;
       if (!user) return;
 
+      setLoading(true);
       const rawTodos = await getTodos(user.uid);
       if (
         rawTodos &&
@@ -94,6 +104,15 @@ function Todo() {
       if (settings?.colorPreferences) {
         setCourses(Object.keys(settings.colorPreferences));
       }
+
+      // Simulate minimum loading time for smooth animation
+      setTimeout(() => {
+        setLoading(false);
+        // After initial animation completes, mark as loaded
+        setTimeout(() => {
+          setHasInitiallyLoaded(true);
+        }, 1000); // Wait for all staggered animations to complete
+      }, 1000);
     };
     fetchData();
   }, []);
@@ -122,14 +141,17 @@ function Todo() {
   };
 
   const handleQuickAdd = async () => {
-    if (!newTodo.trim()) return;
+    if (!newTodo.trim() || priority === "" || subject === "") {
+      showToast("Please fill in all required fields", "error");
+      return;
+    }
 
     const newItem: TodoItem = {
       id: generateId(),
       text: newTodo,
       completed: false,
       createdAt: new Date().toISOString(),
-      priority,
+      priority: priority as "High" | "Medium" | "Low",
       subject,
       suggested: false,
     };
@@ -141,6 +163,8 @@ function Todo() {
 
     setTodos(updated);
     setNewTodo("");
+    setPriority("");
+    setSubject("");
     await saveTodos(updated);
     showToast("Task added successfully", "add");
   };
@@ -198,10 +222,14 @@ function Todo() {
   };
 
   const removeSubtask = (id: string) => {
-    setAdvancedTodo(prev => ({
-      ...prev,
-      subtasks: prev.subtasks.filter(st => st.id !== id)
-    }));
+    setRemovingSubtaskId(id);
+    setTimeout(() => {
+      setAdvancedTodo(prev => ({
+        ...prev,
+        subtasks: prev.subtasks.filter(st => st.id !== id)
+      }));
+      setRemovingSubtaskId(null);
+    }, 300); // Match animation duration
   };
 
   const onDragStart = (start: any) => {
@@ -335,10 +363,33 @@ function Todo() {
     }
   };
 
-  const renderTodoCard = (todo: TodoItem, provided: any) => {
+  const renderTodoCard = (todo: TodoItem, provided: any, index: number) => {
     const isExpanded = expandedTodoId === todo.id;
     const subtasksCompleted = todo.subtasks?.filter(st => st.completed).length || 0;
     const totalSubtasks = todo.subtasks?.length || 0;
+    const isNewlyAdded = Date.now() - new Date(todo.createdAt).getTime() < 1000;
+
+    const style = {
+      display: "flex",
+      background: "#FFFBF1",
+      border: "3px solid #1F0741",
+      borderRadius: "10px",
+      overflow: "hidden",
+      marginBottom: "12px",
+      transform: isOverTrash && activeDragId === todo.id
+        ? "scale(0) rotate(-10deg)"
+        : provided.draggableProps.style?.transform || "none",
+      transition: isOverTrash && activeDragId === todo.id
+        ? "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+        : "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+      position: "relative",
+      ...provided.draggableProps.style,
+      // Add initial load animation if not yet loaded or if newly added
+      ...((!hasInitiallyLoaded && !loading) || isNewlyAdded ? {
+        opacity: 0,
+        animation: `fadeInUp 0.5s ease forwards ${index * 0.1}s`
+      } : {})
+    };
 
     return (
       <div
@@ -352,22 +403,7 @@ function Todo() {
           }
         }}
         className={activeDragId === todo.id ? "dragging" : ""}
-        style={{
-          display: "flex",
-          background: "#FFFBF1",
-          border: "3px solid #1F0741",
-          borderRadius: "10px",
-          overflow: "hidden",
-          marginBottom: "12px",
-          transform: isOverTrash && activeDragId === todo.id
-            ? "scale(0) rotate(-10deg)"
-            : provided.draggableProps.style?.transform || "none",
-          transition: isOverTrash && activeDragId === todo.id
-            ? "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-            : "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-          position: "relative",
-          ...provided.draggableProps.style
-        }}
+        style={style}
         onMouseEnter={(e) => {
           const element = e.currentTarget;
           element.style.transform = "scale(1.003)";
@@ -463,13 +499,17 @@ function Todo() {
                 overflow: "hidden",
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
               }}>
-                {todo.subtasks.map(subtask => (
-                  <div key={subtask.id} style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginTop: "4px"
-                  }}>
+                {todo.subtasks?.map((subtask) => (
+                  <div
+                    key={subtask.id}
+                    className={`subtask-item ${removingSubtaskId === subtask.id ? 'subtask-exit' : 'subtask-enter'}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginTop: "4px"
+                    }}
+                  >
                     <div
                       onClick={(e) => {
                         e.stopPropagation();
@@ -551,6 +591,72 @@ function Todo() {
     );
   };
 
+  const renderSkeletonCard = (index: number) => (
+    <div
+      style={{
+        display: "flex",
+        background: "#FFFBF1",
+        border: "3px solid #e0e0e0",
+        borderRadius: "10px",
+        overflow: "hidden",
+        marginBottom: "12px",
+        opacity: 0,
+        animation: `fadeInUp 0.5s ease forwards ${index * 0.1}s`
+      }}
+    >
+      <div
+        style={{
+          width: "6px",
+          background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+          backgroundSize: "200% 100%",
+          animation: "shimmer 2s infinite"
+        }}
+      />
+      <div style={{ padding: "12px", flex: 1 }}>
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: "8px"
+        }}>
+          <div style={{ flex: 1, marginRight: "16px" }}>
+            <div
+              style={{
+                height: "20px",
+                width: "70%",
+                background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 2s infinite",
+                borderRadius: "4px",
+                marginBottom: "8px"
+              }}
+            />
+            <div
+              style={{
+                height: "16px",
+                width: "40%",
+                background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+                backgroundSize: "200% 100%",
+                animation: "shimmer 2s infinite",
+                borderRadius: "4px"
+              }}
+            />
+          </div>
+          <div
+            style={{
+              height: "16px",
+              width: "80px",
+              background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+              backgroundSize: "200% 100%",
+              animation: "shimmer 2s infinite",
+              borderRadius: "4px"
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   const renderColumn = (columnId: string, title: string) => (
     <div
       key={columnId}
@@ -597,9 +703,24 @@ function Todo() {
           fontSize: "18px",
           borderBottom: "3px solid #1F0741",
           textTransform: "capitalize",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
         }}
       >
-        {title}
+        <span>{columnId === "ongoing" ? "On Going" : title}</span>
+        <div style={{
+          backgroundColor: "#FFFBF1",
+          color: "#1F0741",
+          borderRadius: "6px",
+          padding: "3px 8px",
+          fontSize: "14px",
+          fontWeight: "bold",
+          minWidth: "24px",
+          textAlign: "center"
+        }}>
+          {todos[columnId]?.length || 0}
+        </div>
       </div>
 
       <Droppable droppableId={columnId}>
@@ -615,11 +736,15 @@ function Todo() {
               scrollbarWidth: "none"
             }}
           >
-            {todos[columnId]?.map((todo, index) => (
-              <Draggable key={todo.id} draggableId={todo.id} index={index}>
-                {(provided) => renderTodoCard(todo, provided)}
-              </Draggable>
-            ))}
+            {loading ? (
+              Array(3).fill(null).map((_, index) => renderSkeletonCard(index))
+            ) : (
+              todos[columnId]?.map((todo, index) => (
+                <Draggable key={todo.id} draggableId={todo.id} index={index}>
+                  {(provided) => renderTodoCard(todo, provided, index)}
+                </Draggable>
+              ))
+            )}
             {provided.placeholder}
           </div>
         )}
@@ -649,6 +774,15 @@ function Todo() {
     }, 3000);
   };
 
+  // Update the modal close handler
+  const handleModalClose = () => {
+    setIsModalExiting(true);
+    setTimeout(() => {
+      setShowAdvancedModal(false);
+      setIsModalExiting(false);
+    }, 300); // Match animation duration
+  };
+
   return (
     <div style={{
       padding: "15px",
@@ -667,21 +801,50 @@ function Todo() {
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "16px",
+            flexDirection: "column",
+            gap: "15px",
             marginBottom: "15px"
           }}
         >
-          <h1 style={{ fontSize: "42px", margin: 0, color: "#1F0741", flex: "0 0 auto" }}>To Do</h1>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <h1 style={{ fontSize: "42px", margin: 0, color: "#1F0741" }}>To Do</h1>
+
+            <Droppable droppableId="trash-zone">
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  style={{
+                    width: 48,
+                    height: 48,
+                    backgroundColor: snapshot.isDraggingOver ? "#d41b1b" : "#FFFBF1",
+                    border: snapshot.isDraggingOver ? "3px solid #1F0741" : "3px dashed #1F0741",
+                    borderRadius: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease",
+                    zIndex: 10,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div style={{
+                    animation: snapshot.isDraggingOver ? "rotate 1s ease-in-out infinite" : "none",
+                    transformOrigin: "center"
+                  }}>
+                    <TrashIcon width={31} height={31} />
+                  </div>
+                  <div style={{ display: "none" }}>{provided.placeholder}</div>
+                </div>
+              )}
+            </Droppable>
+          </div>
 
           <div style={{
             display: "flex",
             gap: "8px",
-            flex: 1,
             alignItems: "center",
-            padding: "8px 12px",
-            borderRadius: "16px"
+            padding: "0 4px"
           }}>
             <input
               type="text"
@@ -701,7 +864,7 @@ function Todo() {
             />
             <select
               value={priority}
-              onChange={(e) => setPriority(e.target.value as Priority)}
+              onChange={(e) => setPriority(e.target.value as Priority | "")}
               style={{
                 padding: "8px",
                 border: "3px solid #1F0741",
@@ -711,6 +874,7 @@ function Todo() {
                 width: "100px"
               }}
             >
+              <option value="" disabled>Priority</option>
               <option style={{ color: "#D41B1B", fontWeight: "bold" }}>High</option>
               <option style={{ color: "#FFB200", fontWeight: "bold" }}>Medium</option>
               <option style={{ color: "#1DB815", fontWeight: "bold" }}>Low</option>
@@ -727,6 +891,7 @@ function Todo() {
                 width: "120px"
               }}
             >
+              <option value="" disabled>Category</option>
               <option>General</option>
               {courses.map((c, i) => (
                 <option key={i}>{c}</option>
@@ -785,133 +950,179 @@ function Todo() {
               Advanced
             </button>
           </div>
-
-          <Droppable droppableId="trash-zone">
-            {(provided, snapshot) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                style={{
-                  width: 48,
-                  height: 48,
-                  backgroundColor: snapshot.isDraggingOver ? "#d41b1b" : "#FFFBF1",
-                  border: snapshot.isDraggingOver ? "3px solid #1F0741" : "3px dashed #1F0741",
-                  borderRadius: "10px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "all 0.2s ease",
-                  zIndex: 10,
-                  overflow: "hidden",
-                  flex: "0 0 auto"
-                }}
-              >
-                <div style={{
-                  animation: snapshot.isDraggingOver ? "rotate 1s ease-in-out infinite" : "none",
-                  transformOrigin: "center"
-                }}>
-                  <TrashIcon width={31} height={31} />
-                </div>
-                <div style={{ display: "none" }}>{provided.placeholder}</div>
-              </div>
-            )}
-          </Droppable>
         </div>
 
         {/* Advanced Add Modal */}
         {showAdvancedModal && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}>
-            <div style={{
-              backgroundColor: "#FFFBF1",
-              padding: "20px",
-              borderRadius: "16px",
-              border: "3px solid #1F0741",
-              width: "90%",
-              maxWidth: "600px",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              msOverflowStyle: "none",
-              scrollbarWidth: "none"
+          <div
+            onClick={handleModalClose}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1000,
+              animation: isModalExiting ? "fadeOut 0.3s ease-out forwards" : "fadeIn 0.2s ease-out forwards",
             }}>
+            <div
+              onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the modal itself
+              style={{
+                backgroundColor: "#FFFBF1",
+                padding: "20px",
+                borderRadius: "16px",
+                border: "3px solid #1F0741",
+                width: "90%",
+                maxWidth: "600px",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                msOverflowStyle: "none",
+                scrollbarWidth: "none",
+                animation: isModalExiting ? "slideOut 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" : "slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+                position: "relative" // Ensure modal content stays above overlay
+              }}>
+              <button
+                onClick={handleModalClose}
+                style={{
+                  position: "absolute",
+                  top: "16px",
+                  right: "16px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "24px",
+                  color: "#1F0741",
+                  width: "32px",
+                  height: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "50%",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(31, 7, 65, 0.1)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
+                ×
+              </button>
+
               <h2 style={{ color: "#1F0741", marginTop: 0 }}>Create Detailed Task</h2>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-                <input
-                  type="text"
-                  value={advancedTodo.text}
-                  placeholder="Task title"
-                  onChange={(e) => setAdvancedTodo(prev => ({ ...prev, text: e.target.value }))}
-                  style={{
-                    padding: "10px",
-                    fontSize: "18px",
-                    backgroundColor: "rgb(255, 251, 241)",
-                    border: "2px solid #1F0741",
-                    borderRadius: "8px",
-                  }}
-                />
-
-                <textarea
-                  value={advancedTodo.description}
-                  placeholder="Task description"
-                  onChange={(e) => setAdvancedTodo(prev => ({ ...prev, description: e.target.value }))}
-                  style={{
-                    padding: "10px",
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <label style={{
+                    color: "#1F0741",
                     fontSize: "16px",
-                    backgroundColor: "rgb(255, 251, 241)",
-                    border: "2px solid #1F0741",
-                    borderRadius: "8px",
-                    minHeight: "100px",
-                    resize: "vertical",
-                  }}
-                />
-
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <select
-                    value={advancedTodo.priority}
-                    onChange={(e) => setAdvancedTodo(prev => ({ ...prev, priority: e.target.value as "High" | "Medium" | "Low" }))}
+                    fontWeight: "bold"
+                  }}>
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={advancedTodo.text}
+                    placeholder="Enter task title"
+                    onChange={(e) => setAdvancedTodo(prev => ({ ...prev, text: e.target.value }))}
                     style={{
                       padding: "10px",
+                      fontSize: "16px",
                       backgroundColor: "rgb(255, 251, 241)",
                       border: "2px solid #1F0741",
                       borderRadius: "8px",
-                      flex: 1,
                     }}
-                  >
-                    <option style={{ color: "#D41B1B", fontWeight: "bold" }}>High</option>
-                    <option style={{ color: "#FFB200", fontWeight: "bold" }}>Medium</option>
-                    <option style={{ color: "#1DB815", fontWeight: "bold" }}>Low</option>
-                  </select>
+                  />
+                </div>
 
-                  <select
-                    value={advancedTodo.subject}
-                    onChange={(e) => setAdvancedTodo(prev => ({ ...prev, subject: e.target.value }))}
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <label style={{
+                    color: "#1F0741",
+                    fontSize: "16px",
+                    fontWeight: "bold"
+                  }}>
+                    Description
+                  </label>
+                  <textarea
+                    value={advancedTodo.description}
+                    placeholder="Enter task description"
+                    onChange={(e) => setAdvancedTodo(prev => ({ ...prev, description: e.target.value }))}
                     style={{
                       padding: "10px",
+                      fontSize: "16px",
                       backgroundColor: "rgb(255, 251, 241)",
                       border: "2px solid #1F0741",
                       borderRadius: "8px",
-                      flex: 1,
+                      minHeight: "100px",
+                      resize: "vertical",
                     }}
-                  >
-                    <option>General</option>
-                    {courses.map((c, i) => (
-                      <option key={i}>{c}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div style={{ display: "flex", gap: "10px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+                    <label style={{
+                      color: "#1F0741",
+                      fontSize: "16px",
+                      fontWeight: "bold"
+                    }}>
+                      Priority
+                    </label>
+                    <select
+                      value={advancedTodo.priority}
+                      onChange={(e) => setAdvancedTodo(prev => ({ ...prev, priority: e.target.value as "High" | "Medium" | "Low" }))}
+                      style={{
+                        padding: "10px",
+                        backgroundColor: "rgb(255, 251, 241)",
+                        border: "2px solid #1F0741",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <option style={{ color: "#D41B1B", fontWeight: "bold" }}>High</option>
+                      <option style={{ color: "#FFB200", fontWeight: "bold" }}>Medium</option>
+                      <option style={{ color: "#1DB815", fontWeight: "bold" }}>Low</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+                    <label style={{
+                      color: "#1F0741",
+                      fontSize: "16px",
+                      fontWeight: "bold"
+                    }}>
+                      Category
+                    </label>
+                    <select
+                      value={advancedTodo.subject}
+                      onChange={(e) => setAdvancedTodo(prev => ({ ...prev, subject: e.target.value }))}
+                      style={{
+                        padding: "10px",
+                        backgroundColor: "rgb(255, 251, 241)",
+                        border: "2px solid #1F0741",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <option>General</option>
+                      {courses.map((c, i) => (
+                        <option key={i}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <label style={{
+                    color: "#1F0741",
+                    fontSize: "16px",
+                    fontWeight: "bold"
+                  }}>
+                    Due Date
+                  </label>
                   <input
                     type="date"
                     value={advancedTodo.dueDate}
@@ -921,14 +1132,20 @@ function Todo() {
                       backgroundColor: "rgb(255, 251, 241)",
                       border: "2px solid #1F0741",
                       borderRadius: "8px",
-                      flex: 1,
                     }}
                   />
                 </div>
 
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                    <h3 style={{ margin: 0, color: "#1F0741" }}>Subtasks</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <label style={{
+                      color: "#1F0741",
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                      margin: 0
+                    }}>
+                      Subtasks
+                    </label>
                     <div
                       onClick={addSubtask}
                       style={{
@@ -954,7 +1171,15 @@ function Todo() {
                   </div>
 
                   {advancedTodo.subtasks.map((subtask, index) => (
-                    <div key={subtask.id} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+                    <div
+                      key={subtask.id}
+                      className={`subtask-item ${removingSubtaskId === subtask.id ? 'subtask-exit' : 'subtask-enter'}`}
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        marginBottom: "10px"
+                      }}
+                    >
                       <input
                         type="text"
                         value={subtask.text}
@@ -996,7 +1221,7 @@ function Todo() {
 
                 <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "20px" }}>
                   <button
-                    onClick={() => setShowAdvancedModal(false)}
+                    onClick={handleModalClose}
                     style={{
                       backgroundColor: "#FFFBF1",
                       color: "#1F0741",
@@ -1249,8 +1474,9 @@ function Todo() {
           <div
             key={toast.id}
             style={{
-              backgroundColor: "#ffb703",
-              color: "#1F0741",
+              backgroundColor: toast.type === "add" ? "#ffb703" :
+                toast.type === "delete" ? "#D41B1B" : "#1F0741",
+              color: toast.type === "add" ? "#1F0741" : "#FFFFFF",
               padding: "12px 20px",
               borderRadius: "10px",
               border: "3px solid #1F0741",
@@ -1268,30 +1494,93 @@ function Todo() {
 
       <style>
         {`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+
+          @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+          }
+
           @keyframes slideIn {
             from {
-              transform: translateX(100%);
+              transform: scale(0.95) translateY(20px);
+              opacity: 0;
             }
             to {
-              transform: translateX(0);
+              transform: scale(1) translateY(0);
+              opacity: 1;
             }
           }
+
           @keyframes slideOut {
             from {
-              transform: translateX(0);
+              transform: scale(1) translateY(0);
+              opacity: 1;
             }
             to {
-              transform: translateX(100%);
+              transform: scale(0.95) translateY(20px);
+              opacity: 0;
             }
           }
+
+          @keyframes slideInRight {
+            from {
+              transform: translateX(20px);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+
+          @keyframes slideOutLeft {
+            from {
+              transform: translateX(0);
+              opacity: 1;
+            }
+            to {
+              transform: translateX(-20px);
+              opacity: 0;
+            }
+          }
+
+          .subtask-item {
+            animation: slideInRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          }
+
+          .subtask-exit {
+            animation: slideOutLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+          }
+
           @keyframes rotate {
             0% { transform: rotate(0deg); }
             25% { transform: rotate(-10deg); }
             75% { transform: rotate(10deg); }
             100% { transform: rotate(0deg); }
           }
+
           .dragging {
             z-index: 9999 !important;
+          }
+
+          @keyframes fadeInUp {
+            0% { 
+              opacity: 0; 
+              transform: translateY(20px);
+            }
+            100% { 
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
           }
         `}
       </style>
