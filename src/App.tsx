@@ -5,6 +5,7 @@ import Assignments from "./pages/Assignments";
 import Planner from "./pages/Planner";
 import Todo from "./pages/Todo";
 import Account from "./pages/Account";
+import GradesPage from "./pages/GradesPage";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -39,6 +40,7 @@ function App() {
               <Route path="/assignments" element={<Assignments />} />
               <Route path="/planner" element={<Planner />} />
               <Route path="/todo" element={<Todo />} />
+              <Route path="/grades" element={<GradesPage />} />
               <Route path="/account" element={<Account />} />
             </>
           ) : (

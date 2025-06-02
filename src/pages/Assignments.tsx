@@ -87,31 +87,33 @@ function Assignments() {
             0% { opacity: 0; transform: translateY(10px); }
             100% { opacity: 1; transform: translateY(0); }
           }
-          @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
           }
-          .bounce-loader {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
+          @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
           }
-          .bounce-loader div {
-            width: 12px;
-            height: 12px;
-            background-color: #1f0741;
-            border-radius: 50%;
-            animation: bounce 1.2s infinite ease-in-out;
+          .skeleton {
+            background: linear-gradient(
+              90deg,
+              #f0f0f0 25%,
+              #e0e0e0 37%,
+              #f0f0f0 63%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 2.5s infinite ease-in-out;
+            border-radius: 4px;
           }
-          .bounce-loader div:nth-child(2) { animation-delay: -0.2s; }
-          .bounce-loader div:nth-child(3) { animation-delay: -0.4s; }
-
-
-
+          .skeleton-container {
+            animation: fadeOut 0.5s ease-in-out forwards;
+            animation-play-state: paused;
+          }
+          .skeleton-container.fade-out {
+            animation-play-state: running;
+          }
         `}
-
-
       </style>
 
       {/* Modal for color customization */}
@@ -209,7 +211,7 @@ function Assignments() {
       </div>
 
       {/* Scrollable Assignments View */}
-      <div className="no-scrollbar" style={{
+      <div style={{
         flex: 1,
         overflowY: "auto",
         paddingRight: "6px",
@@ -217,23 +219,70 @@ function Assignments() {
         position: "relative"
       }}>
         {loading ? (
-          <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            height: "100%",
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            flexDirection: "column",
-          }}>
-            <div className="bounce-loader">
-              <div></div>
-              <div></div>
-              <div></div>
-            </div>
-            <p style={{ color: "#555", marginTop: "1rem", fontSize: "0.95rem" }}>Loading assignments...</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            {[1, 2, 3, 4].map((_, index) => (
+              <div
+                key={index}
+                className={`skeleton-container ${!loading ? 'fade-out' : ''}`}
+                style={{
+                  border: "3px solid #e0e0e0",
+                  borderRadius: "10px",
+                  padding: "15px 15px 15px 30px",
+                  background: "#FFFBF1",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  position: "relative",
+                  animation: `fadeInUp 0.5s ease forwards ${index * 0.15}s`,
+                  opacity: 0
+                }}
+              >
+                {/* Left color indicator */}
+                <div className="skeleton" style={{
+                  position: "absolute",
+                  left: "0px",
+                  top: "0px",
+                  bottom: "0px",
+                  width: "15px",
+                  borderTopLeftRadius: "8px",
+                  borderBottomLeftRadius: "8px"
+                }} />
+
+                <div style={{ flex: 1 }}>
+                  <div className="skeleton" style={{
+                    width: "180px",
+                    height: "28px",
+                    marginBottom: "0.5rem"
+                  }} />
+                  <div className="skeleton" style={{
+                    width: "250px",
+                    height: "22px",
+                    marginBottom: "0.5rem"
+                  }} />
+                  <div className="skeleton" style={{
+                    width: "200px",
+                    height: "18px"
+                  }} />
+                </div>
+
+                <div style={{
+                  display: "flex",
+                  gap: "10px",
+                  alignItems: "center"
+                }}>
+                  <div className="skeleton" style={{
+                    width: "80px",
+                    height: "28px",
+                    borderRadius: "6px"
+                  }} />
+                  <div className="skeleton" style={{
+                    width: "120px",
+                    height: "40px",
+                    borderRadius: "6px"
+                  }} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : events.length === 0 ? (
           <p>No upcoming assignments found.</p>

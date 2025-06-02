@@ -7,6 +7,7 @@ import AssignmentsIcon from "../assets/images/icons/assignments.svg?react";
 import PlannerIcon from "../assets/images/icons/planner.svg?react";
 import TodoIcon from "../assets/images/icons/todo.svg?react";
 import AccountIcon from "../assets/images/icons/account.svg?react"; // NEW
+import GradesIcon from "../assets/images/icons/grades.svg?react";
 
 function Sidebar() {
   const location = useLocation();
@@ -16,6 +17,7 @@ function Sidebar() {
     { name: "Assignments", path: "/assignments", Icon: AssignmentsIcon },
     { name: "Planner", path: "/planner", Icon: PlannerIcon },
     { name: "To-Do", path: "/todo", Icon: TodoIcon },
+    { name: "Grades", path: "/grades", Icon: GradesIcon },
   ];
 
   const isPathActive = (path: string) => location.pathname === path;

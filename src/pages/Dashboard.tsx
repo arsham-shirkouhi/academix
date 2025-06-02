@@ -53,13 +53,6 @@ function Dashboard() {
   const userId = auth.currentUser?.uid;
 
   useEffect(() => {
-    if (rotateRestart) {
-      const timeout = setTimeout(() => setRotateRestart(false), 500);
-      return () => clearTimeout(timeout);
-    }
-  }, [rotateRestart]);
-
-  useEffect(() => {
     const today = new Date().toDateString();
 
     const fetchStreak = async () => {
@@ -158,7 +151,7 @@ function Dashboard() {
         color: "#1F0741",
         display: "flex",
         flexDirection: "column",
-        height: "100vh", // Full screen height
+        height: "100vh",
         boxSizing: "border-box",
       }}
     >
@@ -696,3 +689,4 @@ function Dashboard() {
 }
 
 export default Dashboard;
+

@@ -224,42 +224,6 @@ function UpcomingEvents() {
             </ul>
           )}
         </div>
-        {!loading && (
-          <div style={{
-            position: "absolute",
-            bottom: "5px",
-            left: "5px",
-            right: "5px",
-            backgroundColor: "#FFFBF1",
-          }}>
-            <button
-              onClick={() => navigate("/assignments")}
-              style={{
-                width: "100%",
-                height: "35px",
-                backgroundColor: "#ffb703",
-                border: "3px solid #1F0741",
-                borderRadius: "10px",
-                fontWeight: "bold",
-                fontSize: "14px",
-                cursor: "pointer",
-                boxShadow: "0 3px #1F0741",
-                transition: "all 0.2s ease",
-                transform: "translateY(0)"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(2px)";
-                e.currentTarget.style.boxShadow = "0 0 #1F0741";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 3px #1F0741";
-              }}
-            >
-              View Assignments
-            </button>
-          </div>
-        )}
       </div>
     </>
   );

@@ -81,6 +81,9 @@ function Todo() {
   const [loading, setLoading] = useState(true);
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
 
+  // Add state for modal animation
+  const [isDetailModalExiting, setIsDetailModalExiting] = useState(false);
+
   const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
   useEffect(() => {
@@ -486,7 +489,16 @@ function Todo() {
               marginBottom: isExpanded ? "12px" : "0",
               padding: isExpanded ? "8px" : "0"
             }}>
-              {todo.description}
+              <p style={{
+                margin: 0,
+                display: "-webkit-box",
+                WebkitLineClamp: "2",
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+              }}>
+                {todo.description}
+              </p>
             </div>
           )}
 
@@ -783,6 +795,15 @@ function Todo() {
     }, 300); // Match animation duration
   };
 
+  // Add handler for modal close with animation
+  const handleDetailModalClose = () => {
+    setIsDetailModalExiting(true);
+    setTimeout(() => {
+      setSelectedTodoId(null);
+      setIsDetailModalExiting(false);
+    }, 300); // Match animation duration
+  };
+
   return (
     <div style={{
       padding: "15px",
@@ -807,7 +828,7 @@ function Todo() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h1 style={{ fontSize: "42px", margin: 0, color: "#1F0741" }}>To Do</h1>
+            <h1 style={{ fontSize: "42px", margin: 0, color: "#1F0741", fontWeight: "bold" }}>To Do</h1>
 
             <Droppable droppableId="trash-zone">
               {(provided, snapshot) => (
@@ -913,8 +934,8 @@ function Todo() {
                 boxShadow: "0 4px 0 0 #1F0741"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(2px)";
-                e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
+                e.currentTarget.style.transform = "translateY(4px)";
+                e.currentTarget.style.boxShadow = "0 0 0 0 #1F0741";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
@@ -926,8 +947,8 @@ function Todo() {
             <button
               onClick={() => setShowAdvancedModal(true)}
               style={{
-                backgroundColor: "#1F0741",
-                color: "#FFFFFF",
+                backgroundColor: "#FFFBF1",
+                color: "#1F0741",
                 padding: "8px 16px",
                 borderRadius: "10px",
                 fontWeight: "bold",
@@ -939,8 +960,8 @@ function Todo() {
                 boxShadow: "0 4px 0 0 #1F0741"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(2px)";
-                e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
+                e.currentTarget.style.transform = "translateY(4px)";
+                e.currentTarget.style.boxShadow = "0 0 0 0 #1F0741";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
@@ -1236,8 +1257,8 @@ function Todo() {
                       boxShadow: "0 4px 0 0 #1F0741"
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(2px)";
-                      e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
+                      e.currentTarget.style.transform = "translateY(4px)";
+                      e.currentTarget.style.boxShadow = "0 0 0 0 #1F0741";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
@@ -1262,8 +1283,8 @@ function Todo() {
                       boxShadow: "0 4px 0 0 #1F0741"
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(2px)";
-                      e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
+                      e.currentTarget.style.transform = "translateY(4px)";
+                      e.currentTarget.style.boxShadow = "0 0 0 0 #1F0741";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
@@ -1349,8 +1370,8 @@ function Todo() {
                   boxShadow: "0 4px 0 0 #1F0741"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(2px)";
-                  e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
+                  e.currentTarget.style.transform = "translateY(4px)";
+                  e.currentTarget.style.boxShadow = "0 0 0 0 #1F0741";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
@@ -1387,8 +1408,8 @@ function Todo() {
                   boxShadow: "0 4px 0 0 #1F0741"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(2px)";
-                  e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
+                  e.currentTarget.style.transform = "translateY(4px)";
+                  e.currentTarget.style.boxShadow = "0 0 0 0 #1F0741";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
@@ -1404,58 +1425,107 @@ function Todo() {
 
       {/* Detail Modal */}
       {selectedTodoId && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: 1000,
-        }}>
-          <div style={{
-            backgroundColor: "#FFFBF1",
-            padding: "24px",
-            borderRadius: "16px",
-            border: "3px solid #1F0741",
-            width: "90%",
-            maxWidth: "600px",
-            maxHeight: "90vh",
-            overflowY: "auto",
-            msOverflowStyle: "none",
-            scrollbarWidth: "none"
-          }}>
+        <div
+          className="modal-overlay"
+          onClick={handleDetailModalClose}
+          style={{
+            animation: isDetailModalExiting ? "fadeOut 0.3s ease forwards" : "fadeIn 0.3s ease forwards"
+          }}
+        >
+          <div
+            className="modal-content"
+            onClick={e => e.stopPropagation()}
+            style={{
+              animation: isDetailModalExiting ? "slideOut 0.3s ease forwards" : "slideIn 0.3s ease forwards"
+            }}
+          >
             <button
-              onClick={() => setSelectedTodoId(null)}
-              style={{
-                position: "absolute",
-                top: "16px",
-                right: "16px",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "24px",
-                color: "#1F0741",
-                width: "32px",
-                height: "32px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "50%",
-                transition: "all 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(31, 7, 65, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
+              onClick={handleDetailModalClose}
+              className="modal-close-button"
             >
               ×
             </button>
+
+            {(() => {
+              const todo = Object.values(todos)
+                .flat()
+                .find((t: TodoItem) => t.id === selectedTodoId);
+
+              if (!todo) return null;
+
+              return (
+                <div className="modal-inner">
+                  <h2 className="modal-title">{todo.text}</h2>
+
+                  <div className="modal-content-wrapper">
+                    <div className="main-info">
+                      {/* Description */}
+                      {todo.description && (
+                        <div className="description">
+                          <h3 className="section-label">DESCRIPTION</h3>
+                          <p className="description-text">{todo.description}</p>
+                        </div>
+                      )}
+
+                      {/* Task Info */}
+                      <div className="task-info">
+                        <div className="info-row">
+                          <div className="info-item">
+                            <h3 className="section-label">PRIORITY</h3>
+                            <div className="info-content">
+                              <span className="info-value priority-value" style={{ color: getPriorityColor(todo.priority) }}>
+                                {todo.priority}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="info-item">
+                            <h3 className="section-label">CATEGORY</h3>
+                            <div className="info-content">
+                              <span className="info-value">{todo.subject}</span>
+                            </div>
+                          </div>
+
+                          {todo.dueDate && (
+                            <div className="info-item">
+                              <h3 className="section-label">DUE DATE</h3>
+                              <div className="info-content">
+                                <span className="info-value">{new Date(todo.dueDate).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Subtasks */}
+                      {todo.subtasks && todo.subtasks.length > 0 && (
+                        <div className="subtasks">
+                          <h3 className="section-label">SUBTASKS</h3>
+                          <div className="subtasks-list">
+                            {todo.subtasks.map((subtask: { id: string; text: string; completed: boolean }) => (
+                              <div key={subtask.id} className="subtask-item">
+                                <span className="subtask-text" style={{
+                                  textDecoration: subtask.completed ? 'line-through' : 'none',
+                                  opacity: subtask.completed ? 0.6 : 1
+                                }}>
+                                  {subtask.text}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="modal-footer">
+                      <span className="modal-meta">
+                        Created on {new Date(todo.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1495,18 +1565,26 @@ function Todo() {
       <style>
         {`
           @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
           }
 
           @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
+            from {
+              opacity: 1;
+            }
+            to {
+              opacity: 0;
+            }
           }
 
           @keyframes slideIn {
             from {
-              transform: scale(0.95) translateY(20px);
+              transform: scale(0.95) translateY(10px);
               opacity: 0;
             }
             to {
@@ -1521,29 +1599,7 @@ function Todo() {
               opacity: 1;
             }
             to {
-              transform: scale(0.95) translateY(20px);
-              opacity: 0;
-            }
-          }
-
-          @keyframes slideInRight {
-            from {
-              transform: translateX(20px);
-              opacity: 0;
-            }
-            to {
-              transform: translateX(0);
-              opacity: 1;
-            }
-          }
-
-          @keyframes slideOutLeft {
-            from {
-              transform: translateX(0);
-              opacity: 1;
-            }
-            to {
-              transform: translateX(-20px);
+              transform: scale(0.95) translateY(10px);
               opacity: 0;
             }
           }
@@ -1581,6 +1637,175 @@ function Todo() {
           @keyframes shimmer {
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
+          }
+
+          .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+          }
+
+          .modal-content {
+            background-color: #FFFBF1;
+            padding: 24px;
+            border-radius: 12px;
+            border: 3px solid #1F0741;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+          }
+
+          .modal-inner {
+            display: flex;
+            flex-direction: column;
+          }
+
+          .modal-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+          }
+
+          .modal-title {
+            color: #1F0741;
+            margin: 0 0 24px 0;
+            font-size: 24px;
+            font-weight: bold;
+            padding-right: 32px;
+            line-height: 1.3;
+          }
+
+          .main-info {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+          }
+
+          .section-label {
+            color: #1F0741;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+          }
+
+          .description {
+            display: flex;
+            flex-direction: column;
+          }
+
+          .description-text {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.5;
+            color: #1F0741;
+            opacity: 0.9;
+            background-color: rgba(31, 7, 65, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+          }
+
+          .task-info {
+            display: flex;
+            flex-direction: column;
+          }
+
+          .info-row {
+            display: flex;
+            gap: 16px;
+          }
+
+          .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+          }
+
+          .info-content {
+            background-color: rgba(31, 7, 65, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            min-width: 100px;
+          }
+
+          .info-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1F0741;
+          }
+
+          .subtasks {
+            display: flex;
+            flex-direction: column;
+          }
+
+          .subtasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+            background-color: rgba(31, 7, 65, 0.05);
+            border-radius: 8px;
+          }
+
+          .subtask-item {
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+            color: #1F0741;
+          }
+
+          .subtask-text {
+            color: #1F0741;
+          }
+
+          .modal-footer {
+            padding-top: 16px;
+            border-top: 1px solid rgba(31, 7, 65, 0.1);
+            text-align: right;
+          }
+
+          .modal-meta {
+            font-size: 13px;
+            color: #1F0741;
+            opacity: 0.6;
+          }
+
+          .modal-close-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: #1F0741;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            opacity: 0.7;
+          }
+
+          .modal-close-button:hover {
+            background-color: rgba(31, 7, 65, 0.1);
+            opacity: 1;
+          }
+
+          .priority-value {
+            font-weight: 700 !important;
           }
         `}
       </style>
