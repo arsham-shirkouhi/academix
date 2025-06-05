@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
 
 type TodoItem = {
   id: string;
@@ -13,7 +12,6 @@ type TodoItem = {
 function TodoList() {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
