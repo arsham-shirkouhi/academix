@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { fetchUpcomingEvents } from "../utils/canvasApi";
+import { fetchUpcomingEvents, fetchUserProfile } from "../utils/canvasApi";
 import { useNavigate } from "react-router-dom";
 
 function DashboardHeader() {
-  const [userName, setUserName] = useState("");
   const [assignmentsDueTomorrow, setAssignmentsDueTomorrow] = useState(0);
   const [currentWeek, setCurrentWeek] = useState(0);
+  const [userName, setUserName] = useState("");
+  const [loadingText, setLoadingText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingText, setLoadingText] = useState("Student");
-  const placeholderLength = 7; // Length of placeholder text while loading
 
   const totalWeeks = 15;
   const navigate = useNavigate();
@@ -27,7 +26,7 @@ function DashboardHeader() {
 
     if (isLoading) {
       intervalId = setInterval(() => {
-        const shuffledText = Array(placeholderLength)
+        const shuffledText = Array(10)
           .fill('')
           .map(() => getRandomLetter())
           .join('');
@@ -42,19 +41,14 @@ function DashboardHeader() {
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
       const user = auth.currentUser;
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
+      if (!user) return;
 
       const docRef = doc(db, "users", user.uid);
       const snap = await getDoc(docRef);
 
       if (!snap.exists()) {
         console.warn("⚠️ No user data found.");
-        setIsLoading(false);
         return;
       }
 
@@ -62,29 +56,21 @@ function DashboardHeader() {
 
       if (!token || !domain) {
         console.warn("⚠️ Missing token or domain.");
-        setIsLoading(false);
         return;
       }
 
-      // 👤 Fetch name
+      // Fetch user name from Canvas
       try {
-        const response = await fetch(
-          `/api/canvas-profile?token=${token}&domain=${domain}`
-        );
-        const profile = await response.json();
-
-        if (profile?.short_name) {
-          const firstName = profile.name.split(" ")[0];
+        const profile = await fetchUserProfile(token, domain);
+        if (profile.name) {
+          // Extract just the first name
+          const firstName = profile.name.split(' ')[0];
           setUserName(firstName);
-        } else if (profile?.name) {
-          const firstName = profile.name.split(" ")[0];
-          setUserName(firstName);
-        } else {
-          console.warn("No name found in profile response.");
         }
       } catch (err) {
-        console.error("❌ Failed to fetch Canvas profile:", err);
+        console.error("❌ Failed to fetch user profile:", err);
       }
+      setIsLoading(false);
 
       // 📋 Fetch assignments due tomorrow
       try {
@@ -124,8 +110,6 @@ function DashboardHeader() {
           setCurrentWeek(week > 0 ? week : 0);
         }
       }
-
-      setIsLoading(false);
     };
 
     fetchData();
@@ -150,7 +134,7 @@ function DashboardHeader() {
             color: "#21003b",
           }}
         >
-          Welcome back, {isLoading ? loadingText : (userName || "Student")}!
+          Welcome back, {isLoading ? loadingText : userName || "Student"}!
         </h2>
         <p style={{ margin: 0, fontSize: "24px", color: "#21003b" }}>
           {assignmentsDueTomorrow === 0 ? (
@@ -176,11 +160,8 @@ function DashboardHeader() {
         </p>
       </div>
       <div style={{ textAlign: "right", color: "#21003b" }}>
-        <p style={{ margin: 0 }}>{formattedDate}</p>
         <p style={{ margin: 0 }}>
-          <strong>
-            week {currentWeek}/{totalWeeks}
-          </strong>
+          <strong>week {currentWeek}/{totalWeeks}</strong> | {formattedDate}
         </p>
       </div>
     </div>

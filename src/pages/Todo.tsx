@@ -4,7 +4,7 @@ import { auth } from "../firebase";
 import { updateTodos, getTodos, getUserSettings } from "../utils/firestoreUser";
 import TrashIcon from "../assets/images/icons/trash.svg?react";
 
-type ToastType = "add" | "delete" | "error";
+type ToastType = "add" | "delete" | "error" | "archive" | "restore";
 type Toast = {
   message: string;
   type: ToastType;
@@ -26,6 +26,7 @@ type TodoItem = {
   suggested: boolean;
   dueDate?: string;
   subtasks?: { id: string; text: string; completed: boolean }[];
+  archivedAt?: string;
 };
 
 function Todo() {
@@ -34,6 +35,8 @@ function Todo() {
     "ongoing": [],
     "done": [],
   });
+  const [archivedTodos, setArchivedTodos] = useState<TodoItem[]>([]);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [newTodo, setNewTodo] = useState("");
   const [priority, setPriority] = useState<Priority | "">("");
   const [subject, setSubject] = useState("");
@@ -101,6 +104,17 @@ function Todo() {
         "done" in rawTodos
       ) {
         setTodos(rawTodos);
+
+        // Extract archived todos from the "done" column
+        const archived = rawTodos["done"]?.filter(todo => todo.archivedAt) || [];
+        setArchivedTodos(archived);
+
+        // Remove archived todos from the "done" column
+        const activeDoneTodos = rawTodos["done"]?.filter(todo => !todo.archivedAt) || [];
+        setTodos(prev => ({
+          ...prev,
+          "done": activeDoneTodos
+        }));
       }
 
       const settings = await getUserSettings(user.uid);
@@ -141,6 +155,44 @@ function Todo() {
     const user = auth.currentUser;
     if (!user) return;
     await updateTodos(user.uid, newTodos);
+  };
+
+  const archiveCompletedTodos = async () => {
+    const updated = { ...todos };
+    const toArchive = updated["done"].filter(todo => !todo.archivedAt);
+
+    if (toArchive.length === 0) {
+      showToast("No completed tasks to archive", "error");
+      return;
+    }
+
+    const archivedWithTimestamp = toArchive.map(todo => ({
+      ...todo,
+      archivedAt: new Date().toISOString()
+    }));
+
+    setArchivedTodos(prev => [...prev, ...archivedWithTimestamp]);
+    updated["done"] = updated["done"].filter(todo => todo.archivedAt);
+    setTodos(updated);
+    await saveTodos(updated);
+    showToast(`${archivedWithTimestamp.length} tasks archived`, "archive");
+  };
+
+  const restoreTodo = async (todo: TodoItem) => {
+    const updatedArchived = archivedTodos.filter(t => t.id !== todo.id);
+    setArchivedTodos(updatedArchived);
+
+    const todoToRestore = { ...todo, archivedAt: undefined };
+    const updated = { ...todos };
+    updated["done"] = [...updated["done"], todoToRestore];
+    setTodos(updated);
+    await saveTodos(updated);
+    showToast("Task restored", "restore");
+  };
+
+  const permanentlyDeleteArchived = async (todo: TodoItem) => {
+    setArchivedTodos(prev => prev.filter(t => t.id !== todo.id));
+    showToast("Task permanently deleted", "delete");
   };
 
   const handleQuickAdd = async () => {
@@ -722,16 +774,50 @@ function Todo() {
       >
         <span>{columnId === "ongoing" ? "On Going" : title}</span>
         <div style={{
-          backgroundColor: "#FFFBF1",
-          color: "#1F0741",
-          borderRadius: "6px",
-          padding: "3px 8px",
-          fontSize: "14px",
-          fontWeight: "bold",
-          minWidth: "24px",
-          textAlign: "center"
+          display: "flex",
+          alignItems: "center",
+          gap: "8px"
         }}>
-          {todos[columnId]?.length || 0}
+          {columnId === "done" && todos["done"]?.length > 0 && (
+            <button
+              onClick={archiveCompletedTodos}
+              style={{
+                backgroundColor: "#ffb703",
+                color: "#1F0741",
+                border: "2px solid #FFFBF1",
+                borderRadius: "6px",
+                padding: "4px 8px",
+                fontSize: "12px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                transform: "translateY(0)",
+                boxShadow: "0 2px 0 0 #FFFBF1"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(2px)";
+                e.currentTarget.style.boxShadow = "0 0 0 0 #FFFBF1";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 0 0 #FFFBF1";
+              }}
+            >
+              Archive All
+            </button>
+          )}
+          <div style={{
+            backgroundColor: "#FFFBF1",
+            color: "#1F0741",
+            borderRadius: "6px",
+            padding: "3px 8px",
+            fontSize: "14px",
+            fontWeight: "bold",
+            minWidth: "24px",
+            textAlign: "center"
+          }}>
+            {todos[columnId]?.length || 0}
+          </div>
         </div>
       </div>
 
@@ -830,35 +916,120 @@ function Todo() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <h1 style={{ fontSize: "42px", margin: 0, color: "#1F0741", fontWeight: "bold" }}>To Do</h1>
 
-            <Droppable droppableId="trash-zone">
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  style={{
-                    width: 48,
-                    height: 48,
-                    backgroundColor: snapshot.isDraggingOver ? "#d41b1b" : "#FFFBF1",
-                    border: snapshot.isDraggingOver ? "3px solid #1F0741" : "3px dashed #1F0741",
-                    borderRadius: "10px",
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <button
+                onClick={() => setShowArchiveModal(true)}
+                style={{
+                  width: 48,
+                  height: 48,
+                  backgroundColor: "#FFFBF1",
+                  border: "3px solid #1F0741",
+                  borderRadius: "10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  position: "relative"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                  e.currentTarget.style.backgroundColor = "#ffb703";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.backgroundColor = "#FFFBF1";
+                }}
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ color: "#1F0741" }}
+                >
+                  <path
+                    d="M3 7V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M3 7L7 3H17L21 7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 11H15"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 15H15"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {archivedTodos.length > 0 && (
+                  <div style={{
+                    position: "absolute",
+                    top: "-8px",
+                    right: "-8px",
+                    backgroundColor: "#D41B1B",
+                    color: "#FFFFFF",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    transition: "all 0.2s ease",
-                    zIndex: 10,
-                    overflow: "hidden",
-                  }}
-                >
-                  <div style={{
-                    animation: snapshot.isDraggingOver ? "rotate 1s ease-in-out infinite" : "none",
-                    transformOrigin: "center"
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    border: "2px solid #FFFBF1"
                   }}>
-                    <TrashIcon width={31} height={31} />
+                    {archivedTodos.length}
                   </div>
-                  <div style={{ display: "none" }}>{provided.placeholder}</div>
-                </div>
-              )}
-            </Droppable>
+                )}
+              </button>
+
+              <Droppable droppableId="trash-zone">
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    style={{
+                      width: 48,
+                      height: 48,
+                      backgroundColor: snapshot.isDraggingOver ? "#d41b1b" : "#FFFBF1",
+                      border: snapshot.isDraggingOver ? "3px solid #1F0741" : "3px dashed #1F0741",
+                      borderRadius: "10px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all 0.2s ease",
+                      zIndex: 10,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div style={{
+                      animation: snapshot.isDraggingOver ? "rotate 1s ease-in-out infinite" : "none",
+                      transformOrigin: "center"
+                    }}>
+                      <TrashIcon width={31} height={31} />
+                    </div>
+                    <div style={{ display: "none" }}>{provided.placeholder}</div>
+                  </div>
+                )}
+              </Droppable>
+            </div>
           </div>
 
           <div style={{
@@ -1530,6 +1701,309 @@ function Todo() {
         </div>
       )}
 
+      {/* Archive Modal */}
+      {showArchiveModal && (
+        <div
+          onClick={() => setShowArchiveModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+            animation: "fadeIn 0.2s ease-out forwards",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#FFFBF1",
+              padding: "24px",
+              borderRadius: "16px",
+              border: "3px solid #1F0741",
+              width: "90%",
+              maxWidth: "800px",
+              maxHeight: "80vh",
+              overflowY: "auto",
+              position: "relative"
+            }}
+          >
+            <button
+              onClick={() => setShowArchiveModal(false)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "24px",
+                color: "#1F0741",
+                width: "32px",
+                height: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                transition: "all 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(31, 7, 65, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              ×
+            </button>
+
+            <h2 style={{
+              color: "#1F0741",
+              margin: "0 0 20px 0",
+              fontSize: "24px",
+              fontWeight: "bold",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px"
+            }}>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ color: "#1F0741" }}
+              >
+                <path
+                  d="M3 7V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M3 7L7 3H17L21 7"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M9 11H15"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M9 15H15"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Archive ({archivedTodos.length} items)
+            </h2>
+
+            {archivedTodos.length === 0 ? (
+              <div style={{
+                textAlign: "center",
+                padding: "40px 20px",
+                color: "#1F0741",
+                opacity: 0.7
+              }}>
+                <div style={{ marginBottom: "16px", display: "flex", justifyContent: "center" }}>
+                  <svg
+                    width="64"
+                    height="64"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ color: "#1F0741", opacity: 0.5 }}
+                  >
+                    <path
+                      d="M3 7V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7Z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M3 7L7 3H17L21 7"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9 11H15"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9 15H15"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M12 19V19.01"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <p style={{ fontSize: "18px", margin: 0 }}>No archived tasks yet</p>
+                <p style={{ fontSize: "14px", margin: "8px 0 0 0" }}>
+                  Completed tasks will appear here when archived
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {archivedTodos.map((todo) => (
+                  <div
+                    key={todo.id}
+                    style={{
+                      display: "flex",
+                      background: "#FFFBF1",
+                      border: "2px solid #1F0741",
+                      borderRadius: "10px",
+                      padding: "16px",
+                      alignItems: "center",
+                      gap: "12px"
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "6px",
+                        height: "40px",
+                        backgroundColor: getPriorityColor(todo.priority),
+                        borderRadius: "3px",
+                        flexShrink: 0
+                      }}
+                    />
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: "8px"
+                      }}>
+                        <div>
+                          <strong style={{
+                            fontSize: "16px",
+                            color: "#1F0741",
+                            textDecoration: "line-through",
+                            opacity: 0.7
+                          }}>
+                            {todo.text}
+                          </strong>
+                          <div style={{
+                            fontSize: "14px",
+                            color: "#1F0741",
+                            opacity: 0.6,
+                            marginTop: "4px"
+                          }}>
+                            {todo.subject}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontSize: "12px",
+                          color: "#1F0741",
+                          opacity: 0.5,
+                          textAlign: "right"
+                        }}>
+                          <div>Archived</div>
+                          <div>{new Date(todo.archivedAt!).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+
+                      {todo.description && (
+                        <div style={{
+                          fontSize: "14px",
+                          color: "#1F0741",
+                          opacity: 0.6,
+                          fontStyle: "italic"
+                        }}>
+                          {todo.description}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                      <button
+                        onClick={() => restoreTodo(todo)}
+                        style={{
+                          backgroundColor: "#1DB815",
+                          color: "#FFFFFF",
+                          border: "2px solid #1F0741",
+                          borderRadius: "8px",
+                          padding: "8px 12px",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          fontWeight: "bold",
+                          transition: "all 0.2s ease",
+                          transform: "translateY(0)",
+                          boxShadow: "0 2px 0 0 #1F0741"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(2px)";
+                          e.currentTarget.style.boxShadow = "0 0 0 0 #1F0741";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
+                        }}
+                      >
+                        Restore
+                      </button>
+                      <button
+                        onClick={() => permanentlyDeleteArchived(todo)}
+                        style={{
+                          backgroundColor: "#D41B1B",
+                          color: "#FFFFFF",
+                          border: "2px solid #1F0741",
+                          borderRadius: "8px",
+                          padding: "8px 12px",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          fontWeight: "bold",
+                          transition: "all 0.2s ease",
+                          transform: "translateY(0)",
+                          boxShadow: "0 2px 0 0 #1F0741"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(2px)";
+                          e.currentTarget.style.boxShadow = "0 0 0 0 #1F0741";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow = "0 2px 0 0 #1F0741";
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Toast Container */}
       <div style={{
         position: "fixed",
@@ -1545,8 +2019,10 @@ function Todo() {
             key={toast.id}
             style={{
               backgroundColor: toast.type === "add" ? "#ffb703" :
-                toast.type === "delete" ? "#D41B1B" : "#1F0741",
-              color: toast.type === "add" ? "#1F0741" : "#FFFFFF",
+                toast.type === "delete" ? "#D41B1B" :
+                  toast.type === "archive" ? "#1DB815" :
+                    toast.type === "restore" ? "#ffb703" : "#1F0741",
+              color: toast.type === "add" || toast.type === "restore" ? "#1F0741" : "#FFFFFF",
               padding: "12px 20px",
               borderRadius: "10px",
               border: "3px solid #1F0741",
