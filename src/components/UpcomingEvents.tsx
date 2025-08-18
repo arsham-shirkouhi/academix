@@ -144,7 +144,7 @@ function UpcomingEvents() {
           backgroundColor: "#FFFBF1",
           display: "flex",
           flexDirection: "column",
-          height: "300px",
+          height: "100%",
           position: "relative"
         }}
       >

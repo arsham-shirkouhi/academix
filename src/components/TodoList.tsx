@@ -97,7 +97,7 @@ function TodoList() {
         backgroundColor: "#FFFBF1",
         display: "flex",
         flexDirection: "column",
-        height: "300px", // Fixed height
+        height: "100%", // Use full container height
         position: "relative"
       }}
     >
