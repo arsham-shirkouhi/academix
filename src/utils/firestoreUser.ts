@@ -42,7 +42,8 @@ export const getTodos = async (uid: string): Promise<Record<string, any[]> | nul
 
 export const saveUserSchedule = async (uid: string, schedule: any[]) => {
   const docRef = doc(db, "users", uid);
-  await updateDoc(docRef, { schedule });
+  // Use setDoc with merge to create the document if it doesn't exist
+  await setDoc(docRef, { schedule }, { merge: true });
 };
 
 // Study time tracking functions
@@ -90,5 +91,19 @@ export const getCompletedTodos = async (uid: string): Promise<number> => {
 export const loadUserSchedule = async (uid: string): Promise<any[]> => {
   const userRef = doc(db, "users", uid);
   const snapshot = await getDoc(userRef);
-  return snapshot.exists() ? snapshot.data().events || [] : [];
+  if (!snapshot.exists()) return [];
+
+  const data = snapshot.data() as any;
+  const schedule = data.schedule ?? data.events ?? [];
+
+  // Migrate legacy 'events' field to 'schedule' if needed
+  if (!data.schedule && Array.isArray(data.events)) {
+    try {
+      await setDoc(userRef, { schedule: data.events }, { merge: true });
+    } catch (e) {
+      // ignore migration failure; we'll still return the schedule
+    }
+  }
+
+  return Array.isArray(schedule) ? schedule : [];
 };

@@ -11,6 +11,8 @@ type ClassEntry = {
   endTime: string;
   location: string;
   type: "" | "Class" | "Study" | "Workout" | "Free";
+  recurring?: "none" | "weekly" | "biweekly" | "monthly";
+  description?: string;
 };
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -37,13 +39,13 @@ function Planner() {
     endTime: "",
     location: "",
     type: "",
+    recurring: "none",
+    description: "",
   });
+  const [editingEvent, setEditingEvent] = useState<ClassEntry | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const navigate = useNavigate();
-
-  const handleNavigate = (path: string) => {
-    navigate(path);
-  };
 
   useEffect(() => {
     const fetchScheduleAndCourses = async () => {
@@ -84,7 +86,7 @@ function Planner() {
     fetchScheduleAndCourses();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setNewClass((prev) => ({ ...prev, [name]: value }));
   };
@@ -117,6 +119,62 @@ function Planner() {
       endTime: "",
       location: "",
       type: "",
+      recurring: "none",
+      description: "",
+    });
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    const updated = schedule.filter(event => event.id !== eventId);
+    setSchedule(updated);
+
+    const user = auth.currentUser;
+    if (user) await saveUserSchedule(user.uid, updated);
+
+    setShowDeleteConfirm(null);
+  };
+
+  const handleEditEvent = (event: ClassEntry) => {
+    setEditingEvent(event);
+    setNewClass(event);
+    setShowForm(true);
+  };
+
+  const handleUpdateEvent = async () => {
+    if (!editingEvent) return;
+
+    if (
+      !newClass.name ||
+      !newClass.day ||
+      !newClass.startTime ||
+      !newClass.endTime ||
+      !newClass.location ||
+      !newClass.type
+    ) {
+      alert("Please fill in all fields before updating the event.");
+      return;
+    }
+
+    const updated = schedule.map(event =>
+      event.id === editingEvent.id ? { ...newClass, id: editingEvent.id } : event
+    );
+    setSchedule(updated);
+
+    const user = auth.currentUser;
+    if (user) await saveUserSchedule(user.uid, updated);
+
+    setShowForm(false);
+    setEditingEvent(null);
+    setNewClass({
+      id: crypto.randomUUID(),
+      name: "",
+      day: "",
+      startTime: "",
+      endTime: "",
+      location: "",
+      type: "",
+      recurring: "none",
+      description: "",
     });
   };
 
@@ -139,7 +197,7 @@ function Planner() {
     };
 
     return eventsForDay.map((cls) => {
-      const top = getMinutes(cls.startTime) * (36 / 60) - 18;  // 36px per hour, adjusted for grid offset
+      const top = getMinutes(cls.startTime) * (36 / 60) - 18;
       const height = (getMinutes(cls.endTime) - getMinutes(cls.startTime)) * (36 / 60);
 
       return (
@@ -153,28 +211,43 @@ function Planner() {
             width: "calc(100% - 4px)",
             background: getEventColor(cls.type),
             color: "#FFFBF1",
-            borderRadius: "3px",
+            borderRadius: "6px",
             padding: "4px 6px",
             fontSize: "11px",
             zIndex: 10,
             border: "1px solid #FFFBF1",
             cursor: "pointer",
-            transition: "transform 0.2s ease",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+            transition: "all 0.2s ease",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
             overflow: "hidden"
           }}
-          onClick={() => handleNavigate('/')}
+          onClick={() => handleEditEvent(cls)}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "scale(1.02)";
+            e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.2)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.15)";
           }}
         >
-          <strong style={{ fontSize: "12px", marginBottom: "1px" }}>{cls.name}</strong>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <strong style={{ fontSize: "12px", marginBottom: "1px", flex: 1 }}>{cls.name}</strong>
+            {cls.recurring && cls.recurring !== "none" && (
+              <span style={{
+                fontSize: "8px",
+                backgroundColor: "rgba(255,255,255,0.2)",
+                padding: "1px 3px",
+                borderRadius: "3px",
+                marginLeft: "4px"
+              }}>
+                {cls.recurring}
+              </span>
+            )}
+          </div>
           <div style={{ fontSize: "10px", opacity: 0.9 }}>
             {cls.startTime}–{cls.endTime}
           </div>
@@ -229,14 +302,40 @@ function Planner() {
           flexWrap: "wrap",
           gap: "15px"
         }}>
-          <h1 style={{
-            fontSize: "42px",
-            margin: 0,
-            color: "#1F0741",
-            fontWeight: "bold"
-          }}>
-            Weekly Schedule
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <button
+              onClick={() => navigate('/')}
+              style={{
+                padding: "10px 20px",
+                fontSize: "16px",
+                backgroundColor: "#1F0741",
+                color: "#FFFBF1",
+                border: "2px solid #1F0741",
+                borderRadius: "10px",
+                cursor: "pointer",
+                fontWeight: "500",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#2a0a5a";
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#1F0741";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              ← Back to Dashboard
+            </button>
+            <h1 style={{
+              fontSize: "42px",
+              margin: 0,
+              color: "#1F0741",
+              fontWeight: "bold"
+            }}>
+              Weekly Schedule
+            </h1>
+          </div>
 
           {/* Compact Statistics */}
           <div style={{
@@ -348,7 +447,7 @@ function Planner() {
         width: "100%",
         maxWidth: "100%"
       }}>
-        {/* Calendar */}
+        {/* Enhanced Calendar */}
         <div style={{
           border: "3px solid #1F0741",
           borderRadius: "16px",
@@ -358,25 +457,27 @@ function Planner() {
           height: "600px",
           display: "flex",
           flexDirection: "column",
-          width: "100%"
+          width: "100%",
+          boxShadow: "0 8px 32px rgba(31, 7, 65, 0.1)"
         }}>
           {/* Calendar Header */}
           <div style={{
             display: "flex",
-            background: "#1F0741",
+            background: "linear-gradient(135deg, #1F0741 0%, #2a0a5a 100%)",
             color: "#FFFBF1",
             position: "sticky",
             top: 0,
             zIndex: 20,
             width: "100%",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
           }}>
             <div style={{
-              width: "50px",
-              borderRight: "1px solid #FFFBF1",
+              width: "60px",
+              borderRight: "1px solid rgba(255,251,241,0.2)",
               position: "sticky",
               left: 0,
               zIndex: 21,
-              backgroundColor: "#1F0741",
+              background: "linear-gradient(135deg, #1F0741 0%, #2a0a5a 100%)",
             }}
             />
             {getDatesForWeek().map(({ dayName, date, isToday }) => (
@@ -385,26 +486,27 @@ function Planner() {
                 style={{
                   flex: 1,
                   minWidth: "120px",
-                  borderLeft: "1px solid #FFFBF1",
+                  borderLeft: "1px solid rgba(255,251,241,0.2)",
                   display: "flex",
                   alignItems: "center",
-                  padding: "12px 8px",
+                  padding: "15px 8px",
                   backgroundColor: isToday ? "#ffb703" : "transparent",
                   color: isToday ? "#1F0741" : "#FFFBF1",
+                  transition: "all 0.2s ease"
                 }}
               >
                 <div style={{
                   display: "flex",
-                  flexDirection: "row",
+                  flexDirection: "column",
                   alignItems: "center",
-                  gap: "8px",
+                  gap: "4px",
                   fontSize: "14px",
                   fontWeight: "500",
                 }}>
-                  <span>{dayName.slice(0, 3)}</span>
+                  <span style={{ fontSize: "12px", opacity: 0.8 }}>{dayName.slice(0, 3)}</span>
                   <span style={{
-                    fontSize: "16px",
-                    fontWeight: isToday ? "bold" : "500"
+                    fontSize: "20px",
+                    fontWeight: isToday ? "bold" : "600"
                   }}>
                     {date}
                   </span>
@@ -428,12 +530,12 @@ function Planner() {
             <div style={{
               display: "flex",
               flexDirection: "column",
-              width: "50px",
-              backgroundColor: "#FFFFFF",
+              width: "60px",
+              backgroundColor: "#f8f9fa",
               position: "sticky",
               left: 0,
               zIndex: 15,
-              borderRight: "1px solid #ddd"
+              borderRight: "2px solid #e9ecef"
             }}>
               {HOURS.map((hour) => (
                 <div
@@ -442,12 +544,13 @@ function Planner() {
                     position: "relative",
                     height: "36px",
                     fontSize: "11px",
-                    color: "#70757a",
+                    color: "#6c757d",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontWeight: "500",
+                    fontWeight: "600",
                     transform: "translateY(-50%)",
+                    backgroundColor: "#f8f9fa"
                   }}
                 >
                   {hour}
@@ -470,10 +573,10 @@ function Planner() {
                   style={{
                     flex: 1,
                     minWidth: "120px",
-                    borderLeft: "1px solid #eee",
+                    borderLeft: "1px solid #e9ecef",
                     position: "relative",
                     height: "864px",
-                    backgroundImage: `linear-gradient(#eee 1px, transparent 1px)`,
+                    backgroundImage: `linear-gradient(#f8f9fa 1px, transparent 1px)`,
                     backgroundSize: "100% 36px",
                     backgroundPosition: "0 -18px",
                     backgroundColor: "#FFFFFF"
@@ -498,7 +601,7 @@ function Planner() {
           </style>
         </div>
 
-        {/* Daily Events List Section */}
+        {/* Enhanced Daily Events List Section */}
         <div style={{
           marginBottom: "30px"
         }}>
@@ -506,11 +609,12 @@ function Planner() {
             backgroundColor: "#FFFBF1",
             border: "3px solid #1F0741",
             borderRadius: "16px",
-            overflow: "hidden"
+            overflow: "hidden",
+            boxShadow: "0 8px 32px rgba(31, 7, 65, 0.1)"
           }}>
             <div style={{
-              backgroundColor: "#1F0741",
-              padding: "15px",
+              background: "linear-gradient(135deg, #1F0741 0%, #2a0a5a 100%)",
+              padding: "20px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -529,13 +633,14 @@ function Planner() {
                   value={selectedDay}
                   onChange={(e) => setSelectedDay(e.target.value)}
                   style={{
-                    padding: "8px 12px",
+                    padding: "10px 15px",
                     fontSize: "16px",
                     backgroundColor: "#FFFBF1",
                     border: "2px solid #1F0741",
-                    borderRadius: "8px",
+                    borderRadius: "10px",
                     color: "#1F0741",
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    fontWeight: "500"
                   }}
                 >
                   {DAYS.map(day => (
@@ -549,12 +654,13 @@ function Planner() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
-                  padding: "8px 12px",
+                  padding: "10px 15px",
                   fontSize: "16px",
                   backgroundColor: "#FFFBF1",
                   border: "2px solid #1F0741",
-                  borderRadius: "8px",
-                  width: "200px"
+                  borderRadius: "10px",
+                  width: "250px",
+                  fontWeight: "500"
                 }}
               />
             </div>
@@ -575,23 +681,28 @@ function Planner() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      padding: "15px",
-                      backgroundColor: index % 2 === 0 ? "#FFFBF1" : "#f8f8f8",
-                      borderBottom: index !== getDayEvents(selectedDay).length - 1 ? "1px solid #ddd" : "none",
-                      transition: "transform 0.2s ease",
-                      cursor: "pointer"
+                      padding: "20px",
+                      backgroundColor: index % 2 === 0 ? "#FFFBF1" : "#f8f9fa",
+                      borderBottom: index !== getDayEvents(selectedDay).length - 1 ? "1px solid #e9ecef" : "none",
+                      transition: "all 0.2s ease",
+                      cursor: "pointer",
+                      borderRadius: "8px",
+                      marginBottom: "8px"
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateX(10px)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(31, 7, 65, 0.1)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateX(0)";
+                      e.currentTarget.style.boxShadow = "none";
                     }}
+                    onClick={() => handleEditEvent(event)}
                   >
                     <div style={{
-                      width: "120px",
+                      width: "140px",
                       borderRight: "2px solid #1F0741",
-                      paddingRight: "15px"
+                      paddingRight: "20px"
                     }}>
                       <div style={{
                         fontSize: "18px",
@@ -604,7 +715,7 @@ function Planner() {
 
                     <div style={{
                       flex: 1,
-                      paddingLeft: "15px",
+                      paddingLeft: "20px",
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center"
@@ -620,69 +731,125 @@ function Planner() {
                         </div>
                         <div style={{
                           fontSize: "14px",
-                          color: "#666"
+                          color: "#666",
+                          marginBottom: "3px"
                         }}>
                           📍 {event.location}
                         </div>
+                        {event.description && (
+                          <div style={{
+                            fontSize: "12px",
+                            color: "#888",
+                            fontStyle: "italic"
+                          }}>
+                            {event.description}
+                          </div>
+                        )}
                       </div>
 
                       <div style={{
-                        padding: "6px 12px",
-                        borderRadius: "20px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        backgroundColor: (() => {
-                          switch (event.type) {
-                            case "Class": return "#1F0741";
-                            case "Study": return "#2200ff";
-                            case "Workout": return "#D41B1B";
-                            case "Free": return "#1DB815";
-                            default: return "#1F0741";
-                          }
-                        })(),
-                        color: "#FFFBF1"
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px"
                       }}>
-                        {event.type}
-                      </div>
-                    </div>
+                        <div style={{
+                          padding: "8px 16px",
+                          borderRadius: "20px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          backgroundColor: (() => {
+                            switch (event.type) {
+                              case "Class": return "#1F0741";
+                              case "Study": return "#2200ff";
+                              case "Workout": return "#D41B1B";
+                              case "Free": return "#1DB815";
+                              default: return "#1F0741";
+                            }
+                          })(),
+                          color: "#FFFBF1"
+                        }}>
+                          {event.type}
+                        </div>
 
-                    <div style={{
-                      marginLeft: "15px",
-                      padding: "6px 12px",
-                      backgroundColor: "#ffb703",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "#1F0741",
-                      border: "2px solid #1F0741",
-                      whiteSpace: "nowrap"
-                    }}>
-                      {(() => {
-                        const start = new Date(`2000-01-01T${event.startTime}`);
-                        const end = new Date(`2000-01-01T${event.endTime}`);
-                        const diff = (end.getTime() - start.getTime()) / (1000 * 60);
-                        return `${diff} min`;
-                      })()}
+                        {event.recurring && event.recurring !== "none" && (
+                          <div style={{
+                            padding: "6px 12px",
+                            borderRadius: "15px",
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            backgroundColor: "#ffb703",
+                            color: "#1F0741",
+                            border: "1px solid #1F0741"
+                          }}>
+                            {event.recurring}
+                          </div>
+                        )}
+
+                        <div style={{
+                          marginLeft: "10px",
+                          padding: "8px 16px",
+                          backgroundColor: "#ffb703",
+                          borderRadius: "10px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "#1F0741",
+                          border: "2px solid #1F0741",
+                          whiteSpace: "nowrap"
+                        }}>
+                          {(() => {
+                            const start = new Date(`2000-01-01T${event.startTime}`);
+                            const end = new Date(`2000-01-01T${event.endTime}`);
+                            const diff = (end.getTime() - start.getTime()) / (1000 * 60);
+                            return `${diff} min`;
+                          })()}
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDeleteConfirm(event.id);
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            backgroundColor: "#dc3545",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            transition: "all 0.2s ease"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#c82333";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#dc3545";
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
 
               {getDayEvents(selectedDay).length === 0 && (
                 <div style={{
-                  padding: "30px",
+                  padding: "40px",
                   textAlign: "center",
                   color: "#666"
                 }}>
                   <p style={{
                     fontSize: "18px",
-                    margin: "0 0 15px 0"
+                    margin: "0 0 20px 0"
                   }}>
                     No events scheduled for {selectedDay}
                   </p>
                   <button
                     onClick={() => setShowForm(true)}
                     style={{
-                      padding: "10px 20px",
+                      padding: "12px 24px",
                       fontSize: "16px",
                       backgroundColor: "#ffb703",
                       color: "#1F0741",
@@ -719,10 +886,10 @@ function Planner() {
           position: "fixed",
           bottom: "25px",
           right: "25px",
-          width: "50px",
-          height: "50px",
-          fontSize: "24px",
-          borderRadius: "10px",
+          width: "60px",
+          height: "60px",
+          fontSize: "28px",
+          borderRadius: "15px",
           backgroundColor: "#ffb703",
           color: "#1F0741",
           border: "3px solid #1F0741",
@@ -730,7 +897,7 @@ function Planner() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 3px #1F0741",
+          boxShadow: "0 4px #1F0741",
           transform: "translateY(0)",
           transition: "all 0.2s ease",
           zIndex: 100
@@ -741,13 +908,13 @@ function Planner() {
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "0 3px #1F0741";
+          e.currentTarget.style.boxShadow = "0 4px #1F0741";
         }}
       >
         ＋
       </button>
 
-      {/* Modal Form */}
+      {/* Enhanced Modal Form */}
       {showForm && (
         <div style={{
           position: "fixed",
@@ -755,7 +922,7 @@ function Planner() {
           left: 0,
           width: "100%",
           height: "100%",
-          background: "rgba(0,0,0,0.5)",
+          background: "rgba(0,0,0,0.6)",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -763,20 +930,24 @@ function Planner() {
         }}>
           <div style={{
             background: "#FFFBF1",
-            padding: "25px",
-            borderRadius: "16px",
+            padding: "30px",
+            borderRadius: "20px",
             border: "3px solid #1F0741",
-            width: "400px"
+            width: "500px",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            boxShadow: "0 20px 60px rgba(31, 7, 65, 0.3)"
           }}>
             <h2 style={{
-              margin: "0 0 20px 0",
+              margin: "0 0 25px 0",
               color: "#1F0741",
-              fontSize: "24px"
+              fontSize: "28px",
+              textAlign: "center"
             }}>
-              Add Event
+              {editingEvent ? "Edit Event" : "Add Event"}
             </h2>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <input
                 type="text"
                 name="name"
@@ -785,10 +956,10 @@ function Planner() {
                 value={newClass.name}
                 onChange={handleChange}
                 style={{
-                  padding: "10px",
+                  padding: "12px 15px",
                   fontSize: "16px",
                   border: "2px solid #1F0741",
-                  borderRadius: "8px",
+                  borderRadius: "10px",
                   backgroundColor: "#FFFBF1"
                 }}
               />
@@ -801,10 +972,10 @@ function Planner() {
                 value={newClass.type}
                 onChange={handleChange}
                 style={{
-                  padding: "10px",
+                  padding: "12px 15px",
                   fontSize: "16px",
                   border: "2px solid #1F0741",
-                  borderRadius: "8px",
+                  borderRadius: "10px",
                   backgroundColor: "#FFFBF1"
                 }}
               >
@@ -820,10 +991,10 @@ function Planner() {
                 value={newClass.day}
                 onChange={handleChange}
                 style={{
-                  padding: "10px",
+                  padding: "12px 15px",
                   fontSize: "16px",
                   border: "2px solid #1F0741",
-                  borderRadius: "8px",
+                  borderRadius: "10px",
                   backgroundColor: "#FFFBF1"
                 }}
               >
@@ -831,13 +1002,14 @@ function Planner() {
                 {DAYS.map((d) => <option key={d}>{d}</option>)}
               </select>
 
-              <div style={{ display: "flex", gap: "10px" }}>
+              <div style={{ display: "flex", gap: "15px" }}>
                 <div style={{ flex: 1 }}>
                   <label style={{
                     display: "block",
-                    marginBottom: "5px",
+                    marginBottom: "8px",
                     color: "#1F0741",
-                    fontSize: "14px"
+                    fontSize: "14px",
+                    fontWeight: "500"
                   }}>
                     Start Time
                   </label>
@@ -848,10 +1020,10 @@ function Planner() {
                     onChange={handleChange}
                     style={{
                       width: "100%",
-                      padding: "10px",
+                      padding: "12px 15px",
                       fontSize: "16px",
                       border: "2px solid #1F0741",
-                      borderRadius: "8px",
+                      borderRadius: "10px",
                       backgroundColor: "#FFFBF1"
                     }}
                   />
@@ -859,9 +1031,10 @@ function Planner() {
                 <div style={{ flex: 1 }}>
                   <label style={{
                     display: "block",
-                    marginBottom: "5px",
+                    marginBottom: "8px",
                     color: "#1F0741",
-                    fontSize: "14px"
+                    fontSize: "14px",
+                    fontWeight: "500"
                   }}>
                     End Time
                   </label>
@@ -872,10 +1045,10 @@ function Planner() {
                     onChange={handleChange}
                     style={{
                       width: "100%",
-                      padding: "10px",
+                      padding: "12px 15px",
                       fontSize: "16px",
                       border: "2px solid #1F0741",
-                      borderRadius: "8px",
+                      borderRadius: "10px",
                       backgroundColor: "#FFFBF1"
                     }}
                   />
@@ -889,24 +1062,72 @@ function Planner() {
                 value={newClass.location}
                 onChange={handleChange}
                 style={{
-                  padding: "10px",
+                  padding: "12px 15px",
                   fontSize: "16px",
                   border: "2px solid #1F0741",
-                  borderRadius: "8px",
+                  borderRadius: "10px",
                   backgroundColor: "#FFFBF1"
+                }}
+              />
+
+              <select
+                name="recurring"
+                value={newClass.recurring}
+                onChange={handleChange}
+                style={{
+                  padding: "12px 15px",
+                  fontSize: "16px",
+                  border: "2px solid #1F0741",
+                  borderRadius: "10px",
+                  backgroundColor: "#FFFBF1"
+                }}
+              >
+                <option value="none">No Recurrence</option>
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Bi-weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+
+              <textarea
+                name="description"
+                placeholder="Description (optional)"
+                value={newClass.description}
+                onChange={handleChange}
+                rows={3}
+                style={{
+                  padding: "12px 15px",
+                  fontSize: "16px",
+                  border: "2px solid #1F0741",
+                  borderRadius: "10px",
+                  backgroundColor: "#FFFBF1",
+                  resize: "vertical"
                 }}
               />
 
               <div style={{
                 display: "flex",
-                gap: "10px",
+                gap: "15px",
                 marginTop: "10px",
                 justifyContent: "flex-end"
               }}>
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingEvent(null);
+                    setNewClass({
+                      id: crypto.randomUUID(),
+                      name: "",
+                      day: "",
+                      startTime: "",
+                      endTime: "",
+                      location: "",
+                      type: "",
+                      recurring: "none",
+                      description: "",
+                    });
+                  }}
                   style={{
-                    padding: "10px 20px",
+                    padding: "12px 24px",
                     fontSize: "16px",
                     border: "3px solid #1F0741",
                     borderRadius: "10px",
@@ -930,9 +1151,9 @@ function Planner() {
                   Cancel
                 </button>
                 <button
-                  onClick={handleAddClass}
+                  onClick={editingEvent ? handleUpdateEvent : handleAddClass}
                   style={{
-                    padding: "10px 20px",
+                    padding: "12px 24px",
                     fontSize: "16px",
                     border: "3px solid #1F0741",
                     borderRadius: "10px",
@@ -953,9 +1174,86 @@ function Planner() {
                     e.currentTarget.style.boxShadow = "0 3px #1F0741";
                   }}
                 >
-                  Add Event
+                  {editingEvent ? "Update Event" : "Add Event"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "rgba(0,0,0,0.6)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1001
+        }}>
+          <div style={{
+            background: "#FFFBF1",
+            padding: "30px",
+            borderRadius: "20px",
+            border: "3px solid #dc3545",
+            width: "400px",
+            textAlign: "center",
+            boxShadow: "0 20px 60px rgba(220, 53, 69, 0.3)"
+          }}>
+            <h3 style={{
+              margin: "0 0 20px 0",
+              color: "#dc3545",
+              fontSize: "24px"
+            }}>
+              Delete Event
+            </h3>
+            <p style={{
+              margin: "0 0 25px 0",
+              color: "#1F0741",
+              fontSize: "16px"
+            }}>
+              Are you sure you want to delete this event? This action cannot be undone.
+            </p>
+            <div style={{
+              display: "flex",
+              gap: "15px",
+              justifyContent: "center"
+            }}>
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                style={{
+                  padding: "10px 20px",
+                  fontSize: "16px",
+                  border: "2px solid #6c757d",
+                  borderRadius: "8px",
+                  backgroundColor: "#FFFBF1",
+                  color: "#6c757d",
+                  cursor: "pointer",
+                  fontWeight: "500"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteEvent(showDeleteConfirm)}
+                style={{
+                  padding: "10px 20px",
+                  fontSize: "16px",
+                  border: "2px solid #dc3545",
+                  borderRadius: "8px",
+                  backgroundColor: "#dc3545",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: "500"
+                }}
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>

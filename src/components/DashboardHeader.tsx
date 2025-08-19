@@ -129,7 +129,7 @@ function DashboardHeader() {
       <div>
         <h2
           style={{
-            fontSize: "42px",
+            fontSize: "36px",
             marginBottom: "0.15rem",
             color: "#21003b",
           }}
@@ -150,6 +150,7 @@ function DashboardHeader() {
                   fontWeight: "bold",
                   cursor: "pointer",
                   textDecoration: "none",
+                  marginBottom: "0.25rem",
                 }}
               >
                 {" "}

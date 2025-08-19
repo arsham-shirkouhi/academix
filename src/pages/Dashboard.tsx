@@ -1,9 +1,15 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import type { ReactNode } from "react";
 import UpcomingEvents from "../components/UpcomingEvents";
 import WeeklyCalendar from "../components/WeeklyCalender";
 import TodoList from "../components/TodoList";
 import GpaTracker from "../components/GpaTracker";
 import TimerWidget from "../components/TimerWidget";
+import { useNavigate } from "react-router-dom";
+import PlannerIcon from "../assets/images/icons/planner.svg?react";
+import AssignmentsIcon from "../assets/images/icons/assignments.svg?react";
+import TodoIcon from "../assets/images/icons/todo.svg?react";
+import GradesIcon from "../assets/images/icons/grades.svg?react";
 
 import DashboardHeader from "../components/DashboardHeader";
 
@@ -12,6 +18,7 @@ type WidgetType = 'schedule' | 'upcoming' | 'todo' | 'grades' | 'timer';
 
 function Dashboard() {
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Widget layout state
   const [widgetLayout, setWidgetLayout] = useState<{
@@ -203,7 +210,7 @@ function Dashboard() {
     height?: string;
     width?: string;
   }) => (
-    <div style={{ height, width }}>
+    <div style={{ height, width, minHeight: 0 }}>
       <div
         style={{
           border: "3px solid #1F0741",
@@ -223,67 +230,120 @@ function Dashboard() {
             padding: "0.75rem 1rem",
             fontSize: "24px",
             fontWeight: "bold",
-            cursor: "pointer",
             transition: "background-color 0.2s ease",
             position: "relative",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between"
           }}
-          onClick={() => handleWidgetClick(position)}
         >
-          <span>{getWidgetTitle(type)}</span>
-          <span style={{ fontSize: "16px", marginLeft: "8px" }}>▼</span>
+          <div
+            onClick={() => handleWidgetClick(position)}
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px", position: "relative", cursor: "pointer" }}
+          >
+            <span>{getWidgetTitle(type)}</span>
+            <span style={{ fontSize: "16px" }}>▼</span>
 
-          {/* Dropdown Menu */}
-          {dropdownOpen === position && (
-            <div
-              style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                backgroundColor: "#FFFBF1",
-                border: "2px solid #1F0741",
-                borderTop: "none",
-                borderRadius: "0 0 8px 8px",
-                zIndex: 1000,
-                boxShadow: "0 4px 8px rgba(0,0,0,0.2)"
-              }}
-            >
-              {(['schedule', 'upcoming', 'todo', 'grades', 'timer'] as WidgetType[]).map((widgetType) => (
-                <div
-                  key={widgetType}
-                  style={{
-                    padding: "0.5rem 1rem",
-                    cursor: "pointer",
-                    color: "#1F0741",
-                    fontSize: "18px",
-                    fontWeight: "500",
-                    borderBottom: "1px solid #e0e0e0",
-                    transition: "background-color 0.2s ease",
-                    backgroundColor: widgetType === type ? "#FFB800" : "transparent"
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleWidgetSelect(position, widgetType);
-                  }}
-                  onMouseEnter={(e) => {
-                    if (widgetType !== type) {
-                      e.currentTarget.style.backgroundColor = "#f0f0f0";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (widgetType !== type) {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                    }
-                  }}
-                >
-                  {getWidgetTitle(widgetType)}
-                </div>
-              ))}
-            </div>
-          )}
+            {/* Dropdown Menu */}
+            {dropdownOpen === position && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  backgroundColor: "#FFFBF1",
+                  border: "2px solid #1F0741",
+                  borderTop: "none",
+                  borderRadius: "0 0 8px 8px",
+                  zIndex: 1000,
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
+                  width: "fit-content",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {(['schedule', 'upcoming', 'todo', 'grades', 'timer'] as WidgetType[]).map((widgetType) => (
+                  <div
+                    key={widgetType}
+                    style={{
+                      padding: "0.5rem 1rem",
+                      cursor: "pointer",
+                      color: "#1F0741",
+                      fontSize: "18px",
+                      fontWeight: "500",
+                      borderBottom: "1px solid #e0e0e0",
+                      transition: "background-color 0.2s ease",
+                      backgroundColor: widgetType === type ? "#FFB800" : "transparent"
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleWidgetSelect(position, widgetType);
+                    }}
+                    onMouseEnter={(e) => {
+                      if (widgetType !== type) {
+                        (e.currentTarget as HTMLDivElement).style.backgroundColor = "#f0f0f0";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (widgetType !== type) {
+                        (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent";
+                      }
+                    }}
+                  >
+                    {getWidgetTitle(widgetType)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Top-right open page button */}
+          {(() => {
+            const routeMap: Record<string, string> = {
+              schedule: "/planner",
+              upcoming: "/assignments",
+              todo: "/todo",
+              grades: "/grades",
+            };
+            const iconMap: Record<string, ReactNode | null> = {
+              schedule: <PlannerIcon style={{ width: 16, height: 16 }} />,
+              upcoming: <AssignmentsIcon style={{ width: 16, height: 16 }} />,
+              todo: <TodoIcon style={{ width: 16, height: 16 }} />,
+              grades: <GradesIcon style={{ width: 16, height: 16 }} />,
+              timer: null,
+            };
+            const route = routeMap[type];
+            const icon = iconMap[type];
+            return route && icon ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(route);
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  padding: "6px 10px",
+                  fontSize: "12px",
+                  backgroundColor: "#FFFBF1",
+                  color: "#1F0741",
+                  border: "2px solid #FFFBF1",
+                  borderRadius: "8px",
+                  cursor: "pointer"
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#FFE7A3";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#FFFBF1";
+                }}
+                aria-label="Open full page"
+                title="Open full page"
+              >
+                {icon}
+              </button>
+            ) : null;
+          })()}
         </div>
         <div
           className="no-scrollbar"
@@ -326,7 +386,7 @@ function Dashboard() {
       {/* Timer Bar */}
       <div
         style={{
-          marginBottom: "0.5rem",
+          marginBottom: "0.75rem",
         }}
       >
         <TimerWidget />
@@ -359,17 +419,17 @@ function Dashboard() {
         }}
       >
         {/* Left Section - Schedule (Full Height) */}
-        <div style={{ gridRow: "span 2" }}>
+        <div style={{ gridRow: "span 2", minHeight: 0, overflow: "hidden", height: "100%" }}>
           <WidgetBox type={widgetLayout.left} position="left" height="100%" />
         </div>
 
         {/* Right Section - Upcoming (Top) */}
-        <div>
+        <div style={{ minHeight: 0, overflow: "hidden", height: "100%" }}>
           <WidgetBox type={widgetLayout.right} position="right" height="100%" />
         </div>
 
         {/* Right Section - Todo and Grades (Bottom) */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", minHeight: 0, overflow: "hidden" }}>
           <WidgetBox type={widgetLayout.bottom1} position="bottom1" height="100%" />
           <WidgetBox type={widgetLayout.bottom2} position="bottom2" height="100%" />
         </div>
