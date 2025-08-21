@@ -73,7 +73,7 @@ function Assignments() {
   const uniqueCourses = [...new Set(events.map(e => e.courseName))];
 
   return (
-    <div style={{ padding: "15px", height: "100vh", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+    <div style={{ padding: "15px 25px 15px 15px", height: "100vh", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
       <style>
         {`
           .no-scrollbar::-webkit-scrollbar {
@@ -214,7 +214,9 @@ function Assignments() {
       <div style={{
         flex: 1,
         overflowY: "auto",
-        paddingRight: "6px",
+        overflowX: "visible",
+        width: "100%",
+        paddingRight: 0,
         scrollBehavior: "smooth",
         position: "relative"
       }}>
@@ -296,56 +298,52 @@ function Assignments() {
               return (
                 <div
                   key={event.id}
-                  className="assignment-card"
                   style={{
-                    border: `3px solid #1f0741`,
-                    borderRadius: "10px",
-                    padding: "15px 15px 15px 30px",
-                    background: "#FFFBF1",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    position: "relative",
-                    animation: "fadeInUp 0.5s ease forwards",
-                    animationDelay: `${index * 0.05}s`,
-                    opacity: 0,
-                    marginBottom: index === events.length - 1 ? "15px" : "0px"
+                    transition: "transform 0.2s ease-in-out",
+                    transform: "scale(1)"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.02)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
                   }}
                 >
+                  <div
+                    className="assignment-card"
+                    style={{
+                      border: `3px solid #1f0741`,
+                      borderRadius: "10px",
+                      padding: "15px 15px 15px 30px",
+                      background: "#FFFBF1",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      position: "relative",
+                      animation: "fadeInUp 0.5s ease forwards",
+                      animationDelay: `${index * 0.05}s`,
+                      opacity: 0,
+                      marginBottom: index === events.length - 1 ? "15px" : "0px"
+                    }}
+                  >
 
-                  <div style={{
-                    position: "absolute",
-                    left: "0px",
-                    top: "0px",
-                    bottom: "0px",
-                    width: "15px",
-                    backgroundColor: courseColor,
-                    borderTopLeftRadius: "8px",
-                    borderBottomLeftRadius: "8px",
-                  }} />
+                    <div style={{
+                      position: "absolute",
+                      left: "0px",
+                      top: "0px",
+                      bottom: "0px",
+                      width: "15px",
+                      backgroundColor: courseColor,
+                      borderTopLeftRadius: "8px",
+                      borderBottomLeftRadius: "8px",
+                    }} />
 
-                  <div>
-                    <div style={{ fontWeight: "bold", color: courseColor, fontSize: "24px", marginBottom: "0.25rem" }}>
-                      {event.courseName}
-                    </div>
-                    <div style={{ fontSize: "18px", fontWeight: "bold", color: "#1f0741" }}>
-                      {event.title}
-                    </div>
-                    <div style={{ fontSize: "16px", color: "#333", marginTop: "4px" }}>
-                      Due:{" "}
-                      {new Date(event.due_at).toLocaleString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "numeric",
-                      })}
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
+                    {/* Days left badge - top right */}
                     <div
                       style={{
+                        position: "absolute",
+                        top: "10px",
+                        right: "10px",
                         padding: "4px 10px",
                         backgroundColor: urgencyColor,
                         borderRadius: "6px",
@@ -353,28 +351,56 @@ function Assignments() {
                         fontWeight: "bold",
                         fontSize: "0.85rem",
                         border: "3px solid #1F0741",
+                        zIndex: 1
                       }}
                     >
                       {days} day{days !== 1 ? "s" : ""} left
                     </div>
-                    <a
-                      href={event.html_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        backgroundColor: "#ffb703",
-                        padding: "10px 16px",
-                        borderRadius: "6px",
-                        color: "#1F0741",
-                        fontWeight: "bold",
-                        fontSize: "16px",
-                        border: "3px solid #1F0741",
-                        textDecoration: "none",
-                        textAlign: "center",
-                      }}
-                    >
-                      View Assignment
-                    </a>
+
+                    <div>
+                      <a
+                        href={event.html_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontSize: "20px",
+                          fontWeight: "bold",
+                          color: courseColor,
+                          textDecoration: "underline",
+                          cursor: "pointer",
+                          marginBottom: "0.5rem",
+                          display: "block",
+                          transition: "color 0.2s ease-in-out"
+                        }}
+                        onMouseEnter={(e) => {
+                          // Create a darker version of the course color
+                          const darkerColor = courseColor === "#1f0741" ? "#0a031a" :
+                            courseColor.startsWith("#") ?
+                              courseColor.replace(/^#/, "").match(/.{2}/g)?.map(hex =>
+                                Math.max(0, parseInt(hex, 16) - 40).toString(16).padStart(2, "0")
+                              ).join("") : courseColor;
+                          e.currentTarget.style.color = `#${darkerColor}`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = courseColor;
+                        }}
+                      >
+                        {event.title}
+                      </a>
+                      <div style={{ fontSize: "16px", color: "#1f0741", fontWeight: "600", marginBottom: "0.5rem" }}>
+                        {event.courseName}
+                      </div>
+                      <div style={{ fontSize: "14px", color: "#666", marginTop: "4px" }}>
+                        Due:{" "}
+                        {new Date(event.due_at).toLocaleString(undefined, {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "numeric",
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );

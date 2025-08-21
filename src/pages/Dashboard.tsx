@@ -118,7 +118,7 @@ function Dashboard() {
 
   // Memoized static widget components (no timer dependencies)
   const memoizedStaticWidgets = useMemo(() => ({
-    schedule: <WeeklyCalendar limitToTodayAndTomorrow />,
+    schedule: <WeeklyCalendar limitToTodayAndTomorrow={false} />,
     upcoming: <UpcomingEvents />,
     todo: loading ? (
       <div>
