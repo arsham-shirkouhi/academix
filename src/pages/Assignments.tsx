@@ -73,7 +73,7 @@ function Assignments() {
   const uniqueCourses = [...new Set(events.map(e => e.courseName))];
 
   return (
-    <div style={{ padding: "15px 25px 15px 15px", height: "100vh", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
+    <div style={{ padding: "15px 15px 15px 15px", height: "100vh", boxSizing: "border-box", display: "flex", flexDirection: "column" }}>
       <style>
         {`
           .no-scrollbar::-webkit-scrollbar {
@@ -217,6 +217,9 @@ function Assignments() {
         overflowX: "visible",
         width: "100%",
         paddingRight: 0,
+        paddingLeft: 0,
+        paddingTop: "10px",
+        paddingBottom: "10px",
         scrollBehavior: "smooth",
         position: "relative"
       }}>
@@ -300,7 +303,9 @@ function Assignments() {
                   key={event.id}
                   style={{
                     transition: "transform 0.2s ease-in-out",
-                    transform: "scale(1)"
+                    transform: "scale(1)",
+                    marginLeft: "10px",
+                    marginRight: "10px"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "scale(1.02)";
