@@ -1,0 +1,56 @@
+<svg width="31" height="31" viewBox="0 0 31 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Target Circles -->
+  <circle 
+    cx="15.5" 
+    cy="15.5" 
+    r="10.3333" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+  <circle 
+    cx="15.5" 
+    cy="15.5" 
+    r="6.45833" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+  <circle 
+    cx="15.5" 
+    cy="15.5" 
+    r="2.58333" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+  <!-- Center Dot -->
+  <circle 
+    cx="15.5" 
+    cy="15.5" 
+    r="0.645833" 
+    fill="currentColor"
+  />
+  <!-- Crosshairs -->
+  <path 
+    d="M15.5 5.16666V8.91666"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <path 
+    d="M15.5 22.0833V25.8333"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <path 
+    d="M5.16666 15.5H8.91666"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <path 
+    d="M22.0833 15.5H25.8333"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+</svg>

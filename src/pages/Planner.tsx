@@ -9,7 +9,7 @@ type ClassEntry = {
   startTime: string;
   endTime: string;
   location: string;
-  type: "" | "Class" | "Study" | "Workout" | "Free";
+  type: "" | "Class" | "Study" | "Workout" | "Others";
   recurring?: "none" | "weekly" | "biweekly" | "monthly";
   description?: string;
 };
@@ -22,6 +22,7 @@ const HOURS = Array.from({ length: 17 }, (_, i) => {
   if (hour === 12) return "12 PM";
   return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
 });
+const ROW_HEIGHT = 36; // px height per hour row
 
 function Planner() {
   const [schedule, setSchedule] = useState<ClassEntry[]>([]);
@@ -43,8 +44,10 @@ function Planner() {
     recurring: "none",
     description: "",
   });
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [editingEvent, setEditingEvent] = useState<ClassEntry | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [viewEvent, setViewEvent] = useState<ClassEntry | null>(null);
 
 
   useEffect(() => {
@@ -94,23 +97,30 @@ function Planner() {
   const handleAddClass = async () => {
     if (
       !newClass.name ||
-      !newClass.day ||
+      selectedDays.length === 0 ||
       !newClass.startTime ||
       !newClass.endTime ||
       !newClass.location ||
       !newClass.type
     ) {
-      alert("Please fill in all fields before adding the event.");
+      alert("Please fill in all fields and select at least one day before adding the event.");
       return;
     }
 
-    const updated = [...schedule, { ...newClass, id: crypto.randomUUID() }];
+    const newEvents = selectedDays.map(day => ({
+      ...newClass,
+      id: crypto.randomUUID(),
+      day: day
+    }));
+
+    const updated = [...schedule, ...newEvents];
     setSchedule(updated);
 
     const user = auth.currentUser;
     if (user) await saveUserSchedule(user.uid, updated);
 
     setShowForm(false);
+    setSelectedDays([]);
     setNewClass({
       id: crypto.randomUUID(),
       name: "",
@@ -137,6 +147,7 @@ function Planner() {
   const handleEditEvent = (event: ClassEntry) => {
     setEditingEvent(event);
     setNewClass(event);
+    setSelectedDays([]);
     setShowForm(true);
   };
 
@@ -145,7 +156,6 @@ function Planner() {
 
     if (
       !newClass.name ||
-      !newClass.day ||
       !newClass.startTime ||
       !newClass.endTime ||
       !newClass.location ||
@@ -156,7 +166,7 @@ function Planner() {
     }
 
     const updated = schedule.map(event =>
-      event.id === editingEvent.id ? { ...newClass, id: editingEvent.id } : event
+      event.id === editingEvent.id ? { ...newClass, id: editingEvent.id, day: editingEvent.day } : event
     );
     setSchedule(updated);
 
@@ -165,6 +175,7 @@ function Planner() {
 
     setShowForm(false);
     setEditingEvent(null);
+    setSelectedDays([]);
     setNewClass({
       id: crypto.randomUUID(),
       name: "",
@@ -178,14 +189,23 @@ function Planner() {
     });
   };
 
+
   const getEventColor = (type: string) => {
     switch (type) {
       case "Class": return "#1F0741";
-      case "Study": return "#2200ff";
-      case "Workout": return "#D41B1B";
-      case "Free": return "#1DB815";
+      case "Study": return "#2a0a5a";
+      case "Workout": return "#8B4513";
+      case "Others": return "#556B2F";
       default: return "#1F0741";
     }
+  };
+
+  const handleDayToggle = (day: string) => {
+    setSelectedDays(prev =>
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
+    );
   };
 
   const getDayEvents = (day: string) => {
@@ -226,12 +246,12 @@ function Planner() {
         `}
       </style>
       {/* Header */}
-      <div style={{ marginBottom: "1rem" }}>
+      <div style={{ marginBottom: 0 }}>
         <div style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "20px"
+          marginBottom: 0
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
             <h1 style={{
@@ -251,11 +271,11 @@ function Planner() {
             alignItems: "center"
           }}>
             {[
-              { type: "Class", color: "#1F0741", icon: "📚" },
-              { type: "Study", color: "#2200ff", icon: "📖" },
-              { type: "Workout", color: "#D41B1B", icon: "💪" },
-              { type: "Free", color: "#1DB815", icon: "🎯" }
-            ].map(({ type, color, icon }) => {
+              { type: "Class", color: "#1F0741" },
+              { type: "Study", color: "#2a0a5a" },
+              { type: "Workout", color: "#8B4513" },
+              { type: "Others", color: "#556B2F" }
+            ].map(({ type, color }) => {
               const hours = schedule.filter(event => event.type === type)
                 .reduce((total, event) => {
                   const start = new Date(`2000-01-01T${event.startTime}`);
@@ -273,11 +293,9 @@ function Planner() {
                     backgroundColor: "#FFFBF1",
                     border: `3px solid ${color}`,
                     borderRadius: "12px",
-                    padding: "10px 15px",
-                    boxShadow: "0 3px #1F0741"
+                    padding: "10px 15px"
                   }}
                 >
-                  <span style={{ fontSize: "18px" }}>{icon}</span>
                   <span style={{ color: "#1F0741", fontWeight: "600" }}>{type}:</span>
                   <span style={{ color, fontWeight: "bold", fontSize: "16px" }}>
                     {hours}h
@@ -297,7 +315,6 @@ function Planner() {
           border: "3px solid #1F0741",
           borderRadius: "10px",
           overflow: "hidden",
-          boxShadow: "0 8px 32px rgba(31, 7, 65, 0.15)",
           animation: "fadeInUp 0.5s ease forwards",
           opacity: 0
         }}>
@@ -306,15 +323,16 @@ function Planner() {
             display: "flex",
             background: "linear-gradient(135deg, #1F0741 0%, #2a0a5a 100%)",
             color: "#FFFBF1",
-            padding: "20px 0"
+            padding: "8px 0",
+            alignItems: "center"
           }}>
             <div style={{
               width: "80px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontWeight: "bold",
-              fontSize: "16px"
+              fontWeight: "700",
+              fontSize: "13px"
             }}>
               Time
             </div>
@@ -324,9 +342,9 @@ function Planner() {
                 style={{
                   flex: 1,
                   display: "flex",
-                  flexDirection: "column",
                   alignItems: "center",
-                  padding: "10px",
+                  justifyContent: "center",
+                  padding: "6px 0",
                   backgroundColor: isToday ? "#ffb703" : "transparent",
                   color: isToday ? "#1F0741" : "#FFFBF1",
                   borderRadius: "8px",
@@ -334,17 +352,11 @@ function Planner() {
                 }}
               >
                 <div style={{
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  opacity: 0.9
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  letterSpacing: 0.2
                 }}>
-                  {dayName.slice(0, 3)}
-                </div>
-                <div style={{
-                  fontSize: "24px",
-                  fontWeight: "bold"
-                }}>
-                  {date}
+                  {`${dayName.slice(0, 3)}, ${date}`}
                 </div>
               </div>
             ))}
@@ -352,13 +364,13 @@ function Planner() {
 
           {/* Calendar Grid */}
           <div style={{
-            height: "500px",
-            overflowY: "auto",
+            height: `${HOURS.length * ROW_HEIGHT}px`,
+            overflowY: "hidden",
             position: "relative"
           }}>
             <div style={{
               display: "flex",
-              minHeight: "612px" // 17 hours * 36px (8 AM → 12 AM)
+              minHeight: `${HOURS.length * ROW_HEIGHT}px`
             }}>
               {/* Time Column */}
               <div style={{
@@ -373,7 +385,7 @@ function Planner() {
                   <div
                     key={hour}
                     style={{
-                      height: "36px",
+                      height: `${ROW_HEIGHT}px`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -406,7 +418,7 @@ function Planner() {
                       key={index}
                       style={{
                         position: "absolute",
-                        top: `${index * 36}px`,
+                        top: `${index * ROW_HEIGHT}px`,
                         left: 0,
                         right: 0,
                         height: "1px",
@@ -455,7 +467,7 @@ function Planner() {
                             justifyContent: "center",
                             overflow: "hidden"
                           }}
-                          onClick={() => handleEditEvent(event)}
+                          onClick={() => setViewEvent(event)}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.transform = "scale(1.02)";
                             e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.2)";
@@ -469,7 +481,10 @@ function Planner() {
                             fontWeight: "bold",
                             fontSize: "12px",
                             marginBottom: "2px",
-                            lineHeight: "1.2"
+                            lineHeight: "1.2",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px"
                           }}>
                             {event.name}
                           </div>
@@ -599,7 +614,7 @@ function Planner() {
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.borderColor = "transparent";
                   }}
-                  onClick={() => handleEditEvent(event)}
+                  onClick={() => setViewEvent(event)}
                 >
                   {/* Time Column */}
                   <div style={{
@@ -884,28 +899,73 @@ function Planner() {
                 }}
               >
                 <option value="" disabled>Select Event Type</option>
-                <option value="Class">📚 Class</option>
-                <option value="Study">📖 Study</option>
-                <option value="Workout">💪 Workout</option>
-                <option value="Free">🎯 Free Time</option>
+                <option value="Class">Class</option>
+                <option value="Study">Study</option>
+                <option value="Workout">Workout</option>
+                <option value="Others">Others</option>
               </select>
 
-              <select
-                name="day"
-                value={newClass.day}
-                onChange={handleChange}
-                style={{
-                  padding: "15px 20px",
-                  fontSize: "16px",
-                  border: "3px solid #1F0741",
-                  borderRadius: "12px",
-                  backgroundColor: "#FFFBF1",
-                  fontWeight: "500"
-                }}
-              >
-                <option value="" disabled>Select Day</option>
-                {DAYS.map((d) => <option key={d}>{d}</option>)}
-              </select>
+              {!editingEvent && (
+                <div>
+                  <label style={{
+                    display: "block",
+                    marginBottom: "15px",
+                    color: "#1F0741",
+                    fontSize: "16px",
+                    fontWeight: "600"
+                  }}>
+                    Select Days
+                  </label>
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                    gap: "10px"
+                  }}>
+                    {DAYS.map((day) => (
+                      <label
+                        key={day}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: "12px 15px",
+                          backgroundColor: selectedDays.includes(day) ? "#ffb703" : "#FFFBF1",
+                          border: `3px solid ${selectedDays.includes(day) ? "#1F0741" : "#e9ecef"}`,
+                          borderRadius: "10px",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          fontWeight: "500",
+                          color: selectedDays.includes(day) ? "#1F0741" : "#666"
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!selectedDays.includes(day)) {
+                            e.currentTarget.style.backgroundColor = "#f8f9fa";
+                            e.currentTarget.style.borderColor = "#1F0741";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!selectedDays.includes(day)) {
+                            e.currentTarget.style.backgroundColor = "#FFFBF1";
+                            e.currentTarget.style.borderColor = "#e9ecef";
+                          }
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedDays.includes(day)}
+                          onChange={() => handleDayToggle(day)}
+                          style={{
+                            width: "18px",
+                            height: "18px",
+                            accentColor: "#1F0741"
+                          }}
+                        />
+                        {day}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: "20px" }}>
                 <div style={{ flex: 1 }}>
@@ -1024,6 +1084,7 @@ function Planner() {
                   onClick={() => {
                     setShowForm(false);
                     setEditingEvent(null);
+                    setSelectedDays([]);
                     setNewClass({
                       id: crypto.randomUUID(),
                       name: "",
@@ -1193,6 +1254,93 @@ function Planner() {
                 }}
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Event Modal */}
+      {viewEvent && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "rgba(0,0,0,0.7)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1002
+        }}>
+          <div style={{
+            background: "#FFFBF1",
+            padding: "32px",
+            borderRadius: "16px",
+            border: "3px solid #1F0741",
+            width: "520px",
+            boxShadow: "0 20px 60px rgba(31, 7, 65, 0.3)"
+          }}>
+            <h3 style={{
+              margin: 0,
+              marginBottom: "20px",
+              color: "#1F0741",
+              fontSize: "28px",
+              fontWeight: 700
+            }}>{viewEvent.name}</h3>
+            <div style={{ color: "#1F0741", lineHeight: 1.7 }}>
+              <div><strong>Type:</strong> {viewEvent.type}</div>
+              <div><strong>Day:</strong> {viewEvent.day}</div>
+              <div><strong>Time:</strong> {viewEvent.startTime} - {viewEvent.endTime}</div>
+              {viewEvent.location && <div><strong>Location:</strong> {viewEvent.location}</div>}
+              {viewEvent.description && <div><strong>Description:</strong> {viewEvent.description}</div>}
+            </div>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "24px" }}>
+              <button
+                onClick={() => { setViewEvent(null); setShowDeleteConfirm(viewEvent.id); }}
+                style={{
+                  padding: "10px 18px",
+                  fontSize: "15px",
+                  border: "3px solid #dc3545",
+                  borderRadius: "10px",
+                  backgroundColor: "#dc3545",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setViewEvent(null)}
+                style={{
+                  padding: "10px 18px",
+                  fontSize: "15px",
+                  border: "3px solid #1F0741",
+                  borderRadius: "10px",
+                  backgroundColor: "#FFFBF1",
+                  color: "#1F0741",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => { setViewEvent(null); handleEditEvent(viewEvent); }}
+                style={{
+                  padding: "10px 18px",
+                  fontSize: "15px",
+                  border: "3px solid #1F0741",
+                  borderRadius: "10px",
+                  backgroundColor: "#ffb703",
+                  color: "#1F0741",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                Edit
               </button>
             </div>
           </div>

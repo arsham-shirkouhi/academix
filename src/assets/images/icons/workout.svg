@@ -1,0 +1,52 @@
+<svg width="31" height="31" viewBox="0 0 31 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dumbbell -->
+  <rect 
+    x="4.08334" 
+    y="13.5833" 
+    width="4.83333" 
+    height="3.83333" 
+    rx="1.91667" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+  <rect 
+    x="22.0833" 
+    y="13.5833" 
+    width="4.83333" 
+    height="3.83333" 
+    rx="1.91667" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+  <path 
+    d="M8.91666 15.5H22.0833"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <!-- Weight Plates -->
+  <circle 
+    cx="6.5" 
+    cy="15.5" 
+    r="2.41667" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+  <circle 
+    cx="24.5" 
+    cy="15.5" 
+    r="2.41667" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+  <!-- Center Bar -->
+  <rect 
+    x="13.5833" 
+    y="14.25" 
+    width="3.83333" 
+    height="2.5" 
+    rx="1.25" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+</svg>

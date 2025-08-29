@@ -1,0 +1,48 @@
+<svg width="31" height="31" viewBox="0 0 31 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Book -->
+  <path 
+    d="M6.45834 8.08333C6.45834 6.19771 6.45834 5.2549 7.04412 4.66912C7.6299 4.08333 8.57271 4.08333 10.4583 4.08333H20.5417C22.4273 4.08333 23.3701 4.08333 23.9559 4.66912C24.5417 5.2549 24.5417 6.19771 24.5417 8.08333V22.9583C24.5417 24.844 24.5417 25.7868 23.9559 26.3726C23.3701 26.9583 22.4273 26.9583 20.5417 26.9583H10.4583C8.57271 26.9583 7.6299 26.9583 7.04412 26.3726C6.45834 25.7868 6.45834 24.844 6.45834 22.9583V8.08333Z"
+    stroke="currentColor"
+    stroke-width="2"
+  />
+  <!-- Book Lines -->
+  <path 
+    d="M10.3333 10.3333H20.6667"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <path 
+    d="M10.3333 13.5833H18.6667"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <path 
+    d="M10.3333 16.8333H16.6667"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <!-- Reading Glasses -->
+  <circle 
+    cx="8.66666" 
+    cy="15.5" 
+    r="3.875" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+  <circle 
+    cx="22.3333" 
+    cy="15.5" 
+    r="3.875" 
+    stroke="currentColor" 
+    stroke-width="2"
+  />
+  <path 
+    d="M12.5417 15.5H18.4583"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+</svg>

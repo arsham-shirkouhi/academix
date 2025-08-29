@@ -1,0 +1,30 @@
+<svg width="31" height="31" viewBox="0 0 31 31" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Graduation Cap -->
+  <path 
+    d="M5.16666 12.9167L15.5 7.75L25.8333 12.9167L15.5 18.0833L5.16666 12.9167Z"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path 
+    d="M5.16666 12.9167V20.6667C5.16666 22.5523 5.16666 23.4951 5.75244 24.0809C6.33823 24.6667 7.28104 24.6667 9.16666 24.6667H21.8333C23.7189 24.6667 24.6617 24.6667 25.2475 24.0809C25.8333 23.4951 25.8333 22.5523 25.8333 20.6667V12.9167"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <!-- Book Lines -->
+  <path 
+    d="M10.3333 16.125H20.6667"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+  <path 
+    d="M10.3333 19.375H17.3333"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+  />
+</svg>
