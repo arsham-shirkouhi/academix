@@ -214,14 +214,15 @@ function Assignments() {
       <div style={{
         flex: 1,
         overflowY: "auto",
-        overflowX: "visible",
+        overflowX: "hidden",
         width: "100%",
-        paddingRight: 0,
-        paddingLeft: 0,
+        paddingRight: "10px",
+        paddingLeft: "10px",
         paddingTop: "10px",
         paddingBottom: "10px",
         scrollBehavior: "smooth",
-        position: "relative"
+        position: "relative",
+        boxSizing: "border-box"
       }}>
         {loading ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
@@ -304,11 +305,11 @@ function Assignments() {
                   style={{
                     transition: "transform 0.2s ease-in-out",
                     transform: "scale(1)",
-                    marginLeft: "10px",
-                    marginRight: "10px"
+                    marginBottom: index === events.length - 1 ? "15px" : "0px",
+                    position: "relative"
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.02)";
+                    e.currentTarget.style.transform = "scale(1.01)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "scale(1)";
@@ -328,7 +329,8 @@ function Assignments() {
                       animation: "fadeInUp 0.5s ease forwards",
                       animationDelay: `${index * 0.05}s`,
                       opacity: 0,
-                      marginBottom: index === events.length - 1 ? "15px" : "0px"
+                      overflow: "hidden",
+                      boxSizing: "border-box"
                     }}
                   >
 
@@ -347,8 +349,8 @@ function Assignments() {
                     <div
                       style={{
                         position: "absolute",
-                        top: "10px",
-                        right: "10px",
+                        top: "8px",
+                        right: "8px",
                         padding: "4px 10px",
                         backgroundColor: urgencyColor,
                         borderRadius: "6px",
@@ -356,13 +358,17 @@ function Assignments() {
                         fontWeight: "bold",
                         fontSize: "0.85rem",
                         border: "3px solid #1F0741",
-                        zIndex: 1
+                        zIndex: 1,
+                        maxWidth: "calc(100% - 60px)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis"
                       }}
                     >
                       {days} day{days !== 1 ? "s" : ""} left
                     </div>
 
-                    <div>
+                    <div style={{ flex: 1, minWidth: 0, paddingRight: "100px" }}>
                       <a
                         href={event.html_url}
                         target="_blank"
@@ -375,7 +381,9 @@ function Assignments() {
                           cursor: "pointer",
                           marginBottom: "0.5rem",
                           display: "block",
-                          transition: "color 0.2s ease-in-out"
+                          transition: "color 0.2s ease-in-out",
+                          wordBreak: "break-word",
+                          overflowWrap: "break-word"
                         }}
                         onMouseEnter={(e) => {
                           // Create a darker version of the course color
